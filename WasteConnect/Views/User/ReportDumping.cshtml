@@ -175,66 +175,82 @@
         </div>
 
     </div>
-</div>
 @section Scripts {
-
-        function closeReportSuccessPopup() {
-        document.getElementById("reportSuccessPopup").remove();
-    }
     <partial name="_ValidationScriptsPartial" />
 
     <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
 
     <script>
-    async function startCamera() {
+        let cameraStream;
+        let reportMap;
+        let dumpMarker;
+        let searchTimer;
 
-    const video = document.getElementById("camera");
+        function closeReportSuccessPopup() {
+            const popup = document.getElementById("reportSuccessPopup");
 
-    video.style.display = "block";
+            if (popup) {
+                popup.remove();
+            }
+        }
 
-    if (cameraStream) {
-        cameraStream.getTracks().forEach(track => track.stop());
-    }
+        async function startCamera() {
+            const video = document.getElementById("camera");
 
-    try {
+            video.style.display = "block";
+            video.setAttribute("playsinline", true);
+            video.setAttribute("autoplay", true);
+            video.muted = true;
 
-        // Prefer the back camera
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: {
-                    exact: "environment"
-                },
-                width: { ideal: 1920 },
-                height: { ideal: 1080 }
-            },
-            audio: false
-        });
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
 
-    }
-    catch {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "environment"
+                    },
+                    audio: false
+                });
+            }
+            catch (error) {
+                console.log("Back camera failed. Trying default camera.", error);
 
-        // Fallback for laptops or browsers without rear camera support
-        cameraStream = await navigator.mediaDevices.getUserMedia({
-            video: {
-                facingMode: {
-                    ideal: "environment"
+                try {
+                    cameraStream = await navigator.mediaDevices.getUserMedia({
+                        video: true,
+                        audio: false
+                    });
                 }
-            },
-            audio: false
-        });
+                catch (secondError) {
+                    console.log("Camera error:", secondError);
+                    alert("Camera could not open. Please allow camera permission and try again.");
+                    video.style.display = "none";
+                    return;
+                }
+            }
 
-    }
+            video.srcObject = cameraStream;
 
-    video.srcObject = cameraStream;
-
-    await video.play();
-}
+            try {
+                await video.play();
+            }
+            catch (playError) {
+                console.log("Video play error:", playError);
+            }
+        }
 
         function capturePhoto() {
             const video = document.getElementById("camera");
             const canvas = document.getElementById("snapshot");
             const preview = document.getElementById("preview");
             const hiddenInput = document.getElementById("CapturedImageData");
+
+            if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
+                alert("Camera is not ready yet. Please open the camera and wait a moment.");
+                return;
+            }
 
             const context = canvas.getContext("2d");
 
@@ -249,17 +265,14 @@
             preview.src = imageData;
             preview.style.display = "block";
 
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
+            cameraStream.getTracks().forEach(track => track.stop());
+            cameraStream = null;
 
+            video.srcObject = null;
             video.style.display = "none";
         }
-               const azureKey = '@ViewBag.AzureMapsKey';
 
-        let reportMap;
-        let dumpMarker;
-        let searchTimer;
+        const azureKey = '@ViewBag.AzureMapsKey';
 
         document.addEventListener("DOMContentLoaded", function () {
             reportMap = new atlas.Map("reportMap", {
@@ -282,13 +295,17 @@
 
             const locationInput = document.getElementById("DumpingLocation");
 
-            locationInput.addEventListener("input", function () {
-                clearTimeout(searchTimer);
+            if (locationInput) {
+                locationInput.addEventListener("input", function () {
+                    clearTimeout(searchTimer);
 
-                searchTimer = setTimeout(() => {
-                    searchAddressOnMap(locationInput.value);
-                }, 1000);
-            });
+                    searchTimer = setTimeout(() => {
+                        searchAddressOnMap(locationInput.value);
+                    }, 1000);
+                });
+            }
+
+            setupReportOtp();
         });
 
         async function searchAddressOnMap(addressText) {
@@ -314,10 +331,12 @@
             }
 
             const result = data.results[0];
-            const latitude = result.position.lat;
-            const longitude = result.position.lon;
 
-            setDumpLocation(latitude, longitude, result.address.freeformAddress);
+            setDumpLocation(
+                result.position.lat,
+                result.position.lon,
+                result.address.freeformAddress
+            );
         }
 
         function setDumpLocation(latitude, longitude, message) {
@@ -330,19 +349,8 @@
             latInput.value = cleanLat;
             lngInput.value = cleanLng;
 
-            const debugLat = document.getElementById("debugLat");
-            const debugLng = document.getElementById("debugLng");
-
-            if (debugLat) {
-                debugLat.innerText = cleanLat;
-            }
-
-            if (debugLng) {
-                debugLng.innerText = cleanLng;
-            }
-
-            console.log("Latitude saved:", latInput.value);
-            console.log("Longitude saved:", lngInput.value);
+            document.getElementById("debugLat").innerText = cleanLat;
+            document.getElementById("debugLng").innerText = cleanLng;
 
             reportMap.setCamera({
                 center: [Number(cleanLng), Number(cleanLat)],
@@ -363,160 +371,161 @@
 
             document.getElementById("mapSelectedMessage").innerText =
                 `${message} Coordinates: ${cleanLat}, ${cleanLng}`;
-
         }
 
-        const reportForm = document.getElementById("reportForm");
-        const openReportOtpBtn = document.getElementById("openReportOtpBtn");
-        const reportOtpModal = document.getElementById("reportOtpModal");
-        const verifyReportOtpBtn = document.getElementById("verifyReportOtpBtn");
-        const reportCodeBoxes = document.querySelectorAll(".report-code-box");
+        function setupReportOtp() {
+            const reportForm = document.getElementById("reportForm");
+            const openReportOtpBtn = document.getElementById("openReportOtpBtn");
+            const reportOtpModal = document.getElementById("reportOtpModal");
+            const verifyReportOtpBtn = document.getElementById("verifyReportOtpBtn");
+            const reportCodeBoxes = document.querySelectorAll(".report-code-box");
+            const resendReportOtp = document.getElementById("resendReportOtp");
 
-        let reportOtpTimer;
-        let reportOtpVerified = false;
+            let reportOtpTimer;
+            let reportOtpVerified = false;
 
-        reportCodeBoxes.forEach((box, index) => {
-            box.addEventListener("input", function () {
-                this.value = this.value.replace(/[^0-9]/g, "");
+            reportCodeBoxes.forEach((box, index) => {
+                box.addEventListener("input", function () {
+                    this.value = this.value.replace(/[^0-9]/g, "");
 
-                if (this.value.length === 1 && index < reportCodeBoxes.length - 1) {
-                    reportCodeBoxes[index + 1].focus();
+                    if (this.value.length === 1 && index < reportCodeBoxes.length - 1) {
+                        reportCodeBoxes[index + 1].focus();
+                    }
+                });
+
+                box.addEventListener("keydown", function (e) {
+                    if (e.key === "Backspace" && this.value === "" && index > 0) {
+                        reportCodeBoxes[index - 1].focus();
+                    }
+                });
+            });
+
+            document.querySelector(".report-code-inputs").addEventListener("paste", function (e) {
+                e.preventDefault();
+
+                const paste = (e.clipboardData || window.clipboardData)
+                    .getData("text")
+                    .replace(/\D/g, "")
+                    .substring(0, 6);
+
+                [...paste].forEach((digit, i) => {
+                    if (reportCodeBoxes[i]) {
+                        reportCodeBoxes[i].value = digit;
+                    }
+                });
+
+                if (paste.length === 6) {
+                    reportCodeBoxes[5].focus();
                 }
             });
 
-            box.addEventListener("keydown", function (e) {
-                if (e.key === "Backspace" && this.value === "" && index > 0) {
-                    reportCodeBoxes[index - 1].focus();
+            openReportOtpBtn.addEventListener("click", async function () {
+                if (reportOtpVerified) {
+                    reportForm.submit();
+                    return;
+                }
+
+                const phoneNumber = document.getElementById("reportPhoneNumber").value;
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                const formData = new FormData();
+                formData.append("phoneNumber", phoneNumber);
+                formData.append("__RequestVerificationToken", token);
+
+                openReportOtpBtn.disabled = true;
+                openReportOtpBtn.innerText = "Sending OTP...";
+
+                const response = await fetch("/User/SendReportOtp", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                openReportOtpBtn.disabled = false;
+                openReportOtpBtn.innerText = "Submit Report";
+
+                if (result.success) {
+                    clearReportOtpBoxes();
+                    reportOtpModal.classList.add("show");
+                    reportCodeBoxes[0].focus();
+                    startReportOtpCountdown();
+                } else {
+                    alert(result.message);
                 }
             });
-        });
 
-        document.querySelector(".report-code-inputs").addEventListener("paste", function (e) {
-            e.preventDefault();
+            verifyReportOtpBtn.addEventListener("click", async function () {
+                const phoneNumber = document.getElementById("reportPhoneNumber").value;
+                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
-            const paste = (e.clipboardData || window.clipboardData)
-                .getData("text")
-                .replace(/\D/g, "")
-                .substring(0, 6);
+                let otp = "";
+                reportCodeBoxes.forEach(box => {
+                    otp += box.value;
+                });
 
-            [...paste].forEach((digit, i) => {
-                if (reportCodeBoxes[i]) {
-                    reportCodeBoxes[i].value = digit;
+                if (otp.length !== 6) {
+                    alert("Please enter the full 6-digit OTP.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("phoneNumber", phoneNumber);
+                formData.append("otp", otp);
+                formData.append("__RequestVerificationToken", token);
+
+                verifyReportOtpBtn.disabled = true;
+                verifyReportOtpBtn.innerText = "Verifying...";
+
+                const response = await fetch("/User/VerifyReportOtp", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                verifyReportOtpBtn.disabled = false;
+                verifyReportOtpBtn.innerText = "Verify OTP & Submit Report";
+
+                if (result.success) {
+                    reportOtpVerified = true;
+                    reportOtpModal.classList.remove("show");
+                    reportForm.submit();
+                } else {
+                    alert(result.message);
                 }
             });
 
-            if (paste.length === 6) {
-                reportCodeBoxes[5].focus();
-            }
-        });
-
-        openReportOtpBtn.addEventListener("click", async function () {
-            if (reportOtpVerified) {
-                reportForm.submit();
-                return;
-            }
-
-            const phoneNumber = document.getElementById("reportPhoneNumber").value;
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-            const formData = new FormData();
-            formData.append("phoneNumber", phoneNumber);
-            formData.append("__RequestVerificationToken", token);
-
-            openReportOtpBtn.disabled = true;
-            openReportOtpBtn.innerText = "Sending OTP...";
-
-            const response = await fetch("/User/SendReportOtp", {
-                method: "POST",
-                body: formData
+            resendReportOtp.addEventListener("click", function (e) {
+                e.preventDefault();
+                openReportOtpBtn.click();
             });
 
-            const result = await response.json();
-
-            openReportOtpBtn.disabled = false;
-            openReportOtpBtn.innerText = "Submit Report";
-
-            if (result.success) {
-                clearReportOtpBoxes();
-                reportOtpModal.classList.add("show");
-                reportCodeBoxes[0].focus();
-                startReportOtpCountdown();
-            } else {
-                alert(result.message);
-            }
-        });
-
-        verifyReportOtpBtn.addEventListener("click", async function () {
-            const phoneNumber = document.getElementById("reportPhoneNumber").value;
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-            let otp = "";
-            reportCodeBoxes.forEach(box => {
-                otp += box.value;
-            });
-
-            if (otp.length !== 6) {
-                alert("Please enter the full 6-digit OTP.");
-                return;
+            function clearReportOtpBoxes() {
+                reportCodeBoxes.forEach(box => box.value = "");
             }
 
-            const formData = new FormData();
-            formData.append("phoneNumber", phoneNumber);
-            formData.append("otp", otp);
-            formData.append("__RequestVerificationToken", token);
+            function startReportOtpCountdown() {
+                clearInterval(reportOtpTimer);
 
-            verifyReportOtpBtn.disabled = true;
-            verifyReportOtpBtn.innerText = "Verifying...";
+                let seconds = 300;
+                const countdown = document.getElementById("reportOtpCountdown");
 
-            const response = await fetch("/User/VerifyReportOtp", {
-                method: "POST",
-                body: formData
-            });
+                reportOtpTimer = setInterval(() => {
+                    let min = Math.floor(seconds / 60);
+                    let sec = seconds % 60;
 
-            const result = await response.json();
+                    countdown.innerText =
+                        `OTP expires in ${min}:${sec.toString().padStart(2, "0")}`;
 
-            verifyReportOtpBtn.disabled = false;
-            verifyReportOtpBtn.innerText = "Verify OTP & Submit Report";
+                    seconds--;
 
-            if (result.success) {
-                reportOtpVerified = true;
-                reportOtpModal.classList.remove("show");
-                reportForm.submit();
-            } else {
-                alert(result.message);
+                    if (seconds < 0) {
+                        clearInterval(reportOtpTimer);
+                        countdown.innerText = "OTP expired. Please resend OTP.";
+                    }
+                }, 1000);
             }
-        });
-
-        document.getElementById("resendReportOtp").addEventListener("click", async function (e) {
-            e.preventDefault();
-            openReportOtpBtn.click();
-        });
-
-        function clearReportOtpBoxes() {
-            reportCodeBoxes.forEach(box => box.value = "");
         }
-
-        function startReportOtpCountdown() {
-            clearInterval(reportOtpTimer);
-
-            let seconds = 300;
-            const countdown = document.getElementById("reportOtpCountdown");
-
-            reportOtpTimer = setInterval(() => {
-                let min = Math.floor(seconds / 60);
-                let sec = seconds % 60;
-
-                countdown.innerText =
-                    `OTP expires in ${min}:${sec.toString().padStart(2, "0")}`;
-
-                seconds--;
-
-                if (seconds < 0) {
-                    clearInterval(reportOtpTimer);
-                    countdown.innerText = "OTP expired. Please resend OTP.";
-                }
-            }, 1000);
-        }
-    
     </script>
 }
