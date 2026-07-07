@@ -1,0 +1,194 @@
+﻿@model WasteConnect.Models.Company
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Company Application Details";
+}
+
+<div class="company-profile-page">
+    <div class="company-header">
+        <div>
+            <h2>@Model.CompanyName</h2>
+            <p>Review company details, uploaded PDF documents, and approval status.</p>
+        </div>
+
+        <span class="company-status @Model.Status.ToLower()">
+            @Model.Status
+        </span>
+    </div>
+
+    @if (TempData["CompanyActionSuccess"] != null)
+    {
+        <div class="success-alert">
+            @TempData["CompanyActionSuccess"]
+        </div>
+    }
+
+    @if (TempData["CompanyActionError"] != null)
+    {
+        <div class="error-alert">
+            @TempData["CompanyActionError"]
+        </div>
+    }
+
+    <div class="company-profile-card">
+
+        <h3>Company Information</h3>
+
+        <p class="company-desc">@Model.Description</p>
+
+        <div class="company-info-grid">
+            <div><strong>Registration Number</strong><span>@Model.RegistrationNumber</span></div>
+            <div><strong>Contact Person</strong><span>@Model.ContactPerson</span></div>
+            <div><strong>Email</strong><span>@Model.Email</span></div>
+            <div><strong>Phone</strong><span>@Model.PhoneNumber</span></div>
+            <div><strong>Service Area</strong><span>@Model.ServiceArea</span></div>
+            <div><strong>Submitted</strong><span>@Model.CreatedAt.ToString("dd MMM yyyy")</span></div>
+            <div class="full-width"><strong>Address</strong><span>@Model.Address</span></div>
+        </div>
+
+        <h3 class="documents-title">Uploaded PDF Documents</h3>
+
+        <table class="portal-documents-table">
+
+    <thead>
+        <tr>
+            <th>Document</th>
+            <th>Status</th>
+            <th>View</th>
+        </tr>
+    </thead>
+
+    <tbody>
+
+        <tr>
+            <td>Company Registration</td>
+
+            <td>
+                <span class="doc-status uploaded">
+                    Uploaded
+                </span>
+            </td>
+
+            <td>
+                <a href="@Model.CompanyRegistrationUrl"
+                   target="_blank"
+                   class="portal-view-btn">
+                    View
+                </a>
+            </td>
+        </tr>
+
+        <tr>
+            <td>Waste License</td>
+
+            <td>
+                <span class="doc-status uploaded">
+                    Uploaded
+                </span>
+            </td>
+
+            <td>
+                <a href="@Model.WasteLicenseUrl"
+                   target="_blank"
+                   class="portal-view-btn">
+                    View
+                </a>
+            </td>
+        </tr>
+
+        <tr>
+            <td>Tax Clearance</td>
+
+            <td>
+                <span class="doc-status uploaded">
+                    Uploaded
+                </span>
+            </td>
+
+            <td>
+                <a href="@Model.TaxClearanceUrl"
+                   target="_blank"
+                   class="portal-view-btn">
+                    View
+                </a>
+            </td>
+        </tr>
+                <tr>
+                    <td>Insurance Cerificate</td>
+
+                    <td>
+                        <span class="doc-status uploaded">
+                            Uploaded
+                        </span>
+                    </td>
+
+                    <td>
+                        <a href="@Model.InsuranceCertificateUrl"
+                           target="_blank"
+                           class="portal-view-btn">
+                            View
+                        </a>
+                    </td>
+                </tr>
+
+    </tbody>
+
+</table>
+
+            
+
+        @if (!string.IsNullOrEmpty(Model.RejectionReason))
+        {
+            <div class="rejection-box">
+                <strong>Rejection Reason</strong>
+                <p>@Model.RejectionReason</p>
+            </div>
+        }
+
+        <div class="admin-company-actions">
+
+            @if (Model.Status == "Pending")
+            {
+                <form asp-controller="Admin"
+                      asp-action="ApproveCompany"
+                      method="post">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="userId" value="@Model.UserId" />
+
+                    <button type="submit" class="approve-btn">
+                        Approve Company
+                    </button>
+                </form>
+
+                <form asp-controller="Admin"
+                      asp-action="RejectCompany"
+                      method="post"
+                      class="reject-form">
+                    @Html.AntiForgeryToken()
+
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <input type="hidden" name="userId" value="@Model.UserId" />
+
+                    <textarea name="rejectionReason"
+                          placeholder="Enter reason for rejection..."
+                          required></textarea>
+
+                    <button type="submit" class="reject-btn">
+                        Reject Company
+                    </button>
+                </form>
+            }
+
+            <a asp-controller="Admin"
+               asp-action="ManageCompanies"
+               class="back-admin-btn">
+                Back to Companies
+            </a>
+        </div>
+
+    </div>
+
+</div>

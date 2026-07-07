@@ -1,0 +1,191 @@
+﻿@model WasteConnect.Models.Company
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Company Portal";
+}
+
+<div class="company-portal-page">
+
+    @if (TempData["CompanySuccess"] != null)
+    {
+        <div id="companyToast" class="success-toast">
+            <span>✓</span>
+            <p>@TempData["CompanySuccess"]</p>
+        </div>
+    }
+
+    <div class="portal-page-header">
+        <div>
+            <h2>Company Portal</h2>
+            <p>Manage your company application, documents and approval status.</p>
+        </div>
+
+        <span class="portal-status @Model.Status.ToLower()">
+            @Model.Status
+        </span>
+    </div>
+
+    <div class="portal-summary-grid">
+
+        <div class="portal-summary-card">
+            <span>Company</span>
+            <h3>@Model.CompanyName</h3>
+            <p>@Model.ServiceArea</p>
+        </div>
+
+        <div class="portal-summary-card">
+            <span>Application Status</span>
+            <h3>@Model.Status</h3>
+            <p>Municipal review process</p>
+        </div>
+
+        <div class="portal-summary-card">
+            <span>Submitted</span>
+            <h3>@Model.CreatedAt.ToString("dd MMM yyyy")</h3>
+            <p>Application date</p>
+        </div>
+
+        <div class="portal-summary-card">
+            <span>Documents</span>
+            <h3>PDF Files</h3>
+            <p>Uploaded for verification</p>
+        </div>
+
+    </div>
+
+    <div class="portal-content-grid">
+
+        <div class="portal-panel">
+            <div class="portal-panel-header">
+                <h3>Company Information</h3>
+                <p>Registered company and contact details.</p>
+            </div>
+
+            <table class="portal-details-table">
+                <tr>
+                    <th>Registration Number</th>
+                    <td>@Model.RegistrationNumber</td>
+                </tr>
+                <tr>
+                    <th>Contact Person</th>
+                    <td>@Model.ContactPerson</td>
+                </tr>
+                <tr>
+                    <th>Email</th>
+                    <td>@Model.Email</td>
+                </tr>
+                <tr>
+                    <th>Phone</th>
+                    <td>@Model.PhoneNumber</td>
+                </tr>
+                <tr>
+                    <th>Service Area</th>
+                    <td>@Model.ServiceArea</td>
+                </tr>
+                <tr>
+                    <th>Address</th>
+                    <td>@Model.Address</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="portal-panel">
+            <div class="portal-panel-header">
+                <h3>Application Review</h3>
+                <p>Your current verification progress.</p>
+            </div>
+
+            <div class="portal-review-box @Model.Status.ToLower()">
+                @if (Model.Status == "Pending")
+                {
+                    <h4>Pending Review</h4>
+                    <p>Your application is waiting for admin approval.</p>
+                }
+                else if (Model.Status == "Approved")
+                {
+                    <h4>Approved</h4>
+                    <p>Your company is approved to participate in cleanup operations.</p>
+                }
+                else
+                {
+                    <h4>Rejected</h4>
+                    <p>Your application was rejected. Please review the reason below.</p>
+                }
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.RejectionReason))
+            {
+                <div class="portal-rejection-box">
+                    <strong>Rejection Reason</strong>
+                    <p>@Model.RejectionReason</p>
+                </div>
+            }
+        </div>
+
+    </div>
+
+    <div class="portal-panel">
+        <div class="portal-panel-header">
+            <h3>Submitted Documents</h3>
+            <p>PDF documents uploaded for municipal verification.</p>
+        </div>
+
+        <table class="portal-documents-table">
+            <thead>
+                <tr>
+                    <th>Document</th>
+                    <th>File Type</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>Company Registration Certificate</td>
+                    <td>PDF</td>
+                    <td><span class="doc-status uploaded">Uploaded</span></td>
+                    <td><a href="@Model.CompanyRegistrationUrl" target="_blank" class="portal-view-btn">View</a></td>
+                </tr>
+
+                <tr>
+                    <td>Waste Management License</td>
+                    <td>PDF</td>
+                    <td><span class="doc-status uploaded">Uploaded</span></td>
+                    <td><a href="@Model.WasteLicenseUrl" target="_blank" class="portal-view-btn">View</a></td>
+                </tr>
+
+                <tr>
+                    <td>Tax Clearance Certificate</td>
+                    <td>PDF</td>
+                    <td><span class="doc-status uploaded">Uploaded</span></td>
+                    <td><a href="@Model.TaxClearanceUrl" target="_blank" class="portal-view-btn">View</a></td>
+                </tr>
+
+                @if (!string.IsNullOrEmpty(Model.InsuranceCertificateUrl))
+                {
+                    <tr>
+                        <td>Insurance Certificate</td>
+                        <td>PDF</td>
+                        <td><span class="doc-status uploaded">Uploaded</span></td>
+                        <td><a href="@Model.InsuranceCertificateUrl" target="_blank" class="portal-view-btn">View</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script>
+        const companyToast = document.getElementById("companyToast");
+
+        if (companyToast) {
+            setTimeout(() => {
+                companyToast.remove();
+            }, 5000);
+        }
+    </script>
+}

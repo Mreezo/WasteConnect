@@ -1,0 +1,100 @@
+﻿@model List<WasteConnect.Models.DumpingReport>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Completed Jobs";
+}
+
+<div class="assigned-jobs-page">
+
+    <div class="portal-page-header">
+        <div>
+            <h2>Completed Cleanup Jobs</h2>
+            <p>View cleanup jobs completed by your company.</p>
+        </div>
+    </div>
+
+    @if (TempData["JobSuccess"] != null)
+    {
+        <div id="jobToast" class="success-toast">
+            <span>✓</span>
+            <p>@TempData["JobSuccess"]</p>
+        </div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="empty-reports">
+            <h3>No Completed Jobs</h3>
+            <p>Your company has not completed any cleanup jobs yet.</p>
+        </div>
+    }
+    else
+    {
+        <div class="completed-jobs-grid">
+
+            @foreach (var job in Model)
+            {
+                <div class="completed-job-card">
+
+                    <div class="completed-before-after">
+
+                        <div>
+                            <h4>Before</h4>
+
+                            @if (!string.IsNullOrEmpty(job.ImageUrl))
+                            {
+                                <img src="@job.ImageUrl" />
+                            }
+                            else
+                            {
+                                <div class="no-image">No Image</div>
+                            }
+                        </div>
+
+                        <div>
+                            <h4>After</h4>
+
+                            @if (!string.IsNullOrEmpty(job.AfterCleanupImageUrl))
+                            {
+                                <img src="@job.AfterCleanupImageUrl" />
+                            }
+                            else
+                            {
+                                <div class="no-image">No After Image</div>
+                            }
+                        </div>
+
+                    </div>
+
+                    <div class="assigned-job-content">
+                        <h3>@job.DumpingLocation</h3>
+
+                        <p><strong>Status:</strong> @job.Status</p>
+                        <p><strong>Completed:</strong> @(job.CompletedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not available")</p>
+
+                        @if (!string.IsNullOrEmpty(job.CompletionNotes))
+                        {
+                            <p><strong>Notes:</strong> @job.CompletionNotes</p>
+                        }
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script>
+        const jobToast = document.getElementById("jobToast");
+
+        if (jobToast) {
+            setTimeout(() => {
+                jobToast.remove();
+            }, 5000);
+        }
+    </script>
+}

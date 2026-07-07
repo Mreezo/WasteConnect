@@ -1,0 +1,203 @@
+﻿@model List<WasteConnect.Models.DisposalSite>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Find Disposal Site";
+}
+
+<link rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
+
+<div class="disposal-page">
+
+    <div class="disposal-header">
+        <div>
+            <h2>Find a Disposal Site</h2>
+            <p>
+                Locate the nearest legal waste disposal site in Pietermaritzburg
+                and get directions to the facility.
+            </p>
+        </div>
+
+        <button type="button" class="locate-btn" onclick="findNearestSite()">
+            📍 Use My Location
+        </button>
+    </div>
+
+    <div id="locationMessage" class="location-message">
+        Click "Use My Location" to find the nearest disposal site.
+    </div>
+
+    <div class="disposal-grid">
+        @foreach (var site in Model)
+        {
+            <div class="disposal-card"
+                 data-lat="@site.Latitude"
+                 data-lng="@site.Longitude">
+
+                <div class="disposal-card-layout">
+
+                    <div class="disposal-content">
+                        <h3>@site.Name</h3>
+
+                        <p class="site-description">
+                            @site.Description
+                        </p>
+
+                        <div class="site-row">
+                            <strong>📍 Address</strong>
+                            <span>@site.Address</span>
+                        </div>
+
+                        <div class="site-row">
+                            <strong>🏙 City</strong>
+                            <span>@site.City</span>
+                        </div>
+
+                        <div class="site-row">
+                            <strong>📏 Distance</strong>
+                            <span class="distance-value">Waiting for location...</span>
+                        </div>
+
+                        <a href="#" class="directions-btn" target="_blank">
+                            Get Directions
+                        </a>
+                    </div>
+
+                    <div class="disposal-image">
+                        <img src="@site.ImageUrl" alt="@site.Name" />
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="map-section">
+        <h3>Location Map</h3>
+        <div id="azureMap"></div>
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
+    <script>
+        const azureKey = '@ViewBag.AzureMapsKey';
+        let map;
+
+        function findNearestSite() {
+            const message = document.getElementById("locationMessage");
+
+            if (!navigator.geolocation) {
+                message.innerHTML = "Location services are not supported by your browser.";
+                return;
+            }
+
+            message.innerHTML = "Obtaining your current location...";
+
+            navigator.geolocation.getCurrentPosition(
+                function (position) {
+                    const userLat = position.coords.latitude;
+                    const userLng = position.coords.longitude;
+
+                    const cards = document.querySelectorAll(".disposal-card");
+
+                    let nearestCard = null;
+                    let nearestDistance = 999999;
+                    let nearestLat = null;
+                    let nearestLng = null;
+
+                    cards.forEach(card => {
+                        card.classList.remove("nearest-site");
+
+                        const siteLat = parseFloat(card.dataset.lat);
+                        const siteLng = parseFloat(card.dataset.lng);
+
+                        const distance = calculateDistance(userLat, userLng, siteLat, siteLng);
+
+                        card.querySelector(".distance-value").innerText =
+                            distance.toFixed(2) + " km";
+
+                        const directionsUrl =
+                            `https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${siteLat},${siteLng}`;
+
+                        card.querySelector(".directions-btn").href = directionsUrl;
+
+                        if (distance < nearestDistance) {
+                            nearestDistance = distance;
+                            nearestCard = card;
+                            nearestLat = siteLat;
+                            nearestLng = siteLng;
+                        }
+                    });
+
+                    if (nearestCard) {
+                        nearestCard.classList.add("nearest-site");
+
+                        message.innerHTML =
+                            `Nearest disposal site found (${nearestDistance.toFixed(2)} km away).`;
+
+                        loadMap(userLat, userLng, nearestLat, nearestLng);
+                    }
+                },
+                function () {
+                    message.innerHTML =
+                        "Location access denied. Please allow location permissions.";
+                }
+            );
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) *
+                Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) *
+                Math.sin(dLon / 2);
+
+            const c =
+                2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            return R * c;
+        }
+
+        function loadMap(userLat, userLng, siteLat, siteLng) {
+            if (map) {
+                map.dispose();
+            }
+
+            map = new atlas.Map('azureMap', {
+                center: [siteLng, siteLat],
+                zoom: 13,
+                authOptions: {
+                    authType: 'subscriptionKey',
+                    subscriptionKey: azureKey
+                }
+            });
+
+            map.events.add('ready', function () {
+                const userMarker = new atlas.HtmlMarker({
+                    color: 'DodgerBlue',
+                    text: 'U',
+                    position: [userLng, userLat]
+                });
+
+                const siteMarker = new atlas.HtmlMarker({
+                    color: 'Green',
+                    text: 'W',
+                    position: [siteLng, siteLat]
+                });
+
+                map.markers.add(userMarker);
+                map.markers.add(siteMarker);
+            });
+        }
+    </script>
+}

@@ -1,0 +1,83 @@
+﻿@model (WasteConnect.Models.ApplicationUser User, IList<string> Roles)
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "User Profile";
+
+    var user = Model.User;
+    var roles = Model.Roles;
+}
+
+<div class="user-profile-page">
+
+    <div class="profile-edit-card">
+
+        <div class="profile-header-section">
+
+            <div class="profile-avatar-large">
+                @if (!string.IsNullOrEmpty(user.ProfileImageUrl))
+                {
+                    <img src="@user.ProfileImageUrl" />
+                }
+                else
+                {
+                    <span>@user.FullName.Substring(0, 1).ToUpper()</span>
+                }
+            </div>
+
+            <div>
+                <h2>@user.FullName</h2>
+                <p>@user.Email</p>
+
+                <span class="company-status approved">
+                    @string.Join(", ", roles)
+                </span>
+            </div>
+
+        </div>
+
+        <div class="company-profile-info">
+
+            <div class="profile-info-row">
+                <span>Full Name</span>
+                <strong>@user.FullName</strong>
+            </div>
+
+            <div class="profile-info-row">
+                <span>Email</span>
+                <strong>@user.Email</strong>
+            </div>
+
+            <div class="profile-info-row">
+                <span>Phone Number</span>
+                <strong>@user.PhoneNumber</strong>
+            </div>
+
+            <div class="profile-info-row">
+                <span>Home Address</span>
+                <strong>@user.HomeAddress</strong>
+            </div>
+
+            <div class="profile-info-row">
+                <span>Account Role</span>
+                <strong>@string.Join(", ", roles)</strong>
+            </div>
+
+            <div class="profile-info-row">
+                <span>User ID</span>
+                <strong>@user.Id</strong>
+            </div>
+
+        </div>
+
+        <div class="details-actions">
+            <a asp-controller="Admin"
+               asp-action="ManageUsers"
+               class="back-admin-btn">
+                Back to Users
+            </a>
+        </div>
+
+    </div>
+
+</div>

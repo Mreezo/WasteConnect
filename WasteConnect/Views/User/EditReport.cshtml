@@ -1,0 +1,142 @@
+﻿@model WasteConnect.ViewModels.DumpingReportViewModel
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Edit Report";
+}
+
+<div class="report-page">
+
+    <div class="report-header">
+        <div>
+            <h2>Edit Illegal Dumping Report</h2>
+            <p>You can update the location or replace the photo while the report is still pending.</p>
+        </div>
+
+        <div class="report-badge">
+            Pending Edit
+        </div>
+    </div>
+
+    <form asp-controller="User"
+          asp-action="EditReport"
+          asp-route-id="@ViewBag.ReportId"
+          method="post"
+          enctype="multipart/form-data"
+          class="report-form">
+
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+        <div class="form-grid">
+            <div class="form-box">
+                <label asp-for="FullName"></label>
+                <input asp-for="FullName" readonly />
+            </div>
+
+            <div class="form-box">
+                <label asp-for="PhoneNumber"></label>
+                <input asp-for="PhoneNumber" readonly />
+            </div>
+
+            <div class="form-box full">
+                <label asp-for="DumpingLocation"></label>
+                <input asp-for="DumpingLocation"
+                       placeholder="Example: 25 Church Street, Scottsville" />
+                <span asp-validation-for="DumpingLocation" class="text-danger"></span>
+            </div>
+
+            <div class="form-box">
+                <label>City</label>
+                <input asp-for="City" value="Pietermaritzburg" readonly />
+            </div>
+        </div>
+
+        <div class="upload-section">
+            <div class="upload-card">
+                <h3>Upload New Photo</h3>
+                <p>Choose a new photo only if you want to replace the current one.</p>
+
+                <input asp-for="ImageFile" type="file" accept="image/*" />
+            </div>
+
+            <div class="upload-card">
+                <h3>Take New Photo</h3>
+                <p>Use your camera to replace the existing image.</p>
+
+                <video id="camera" autoplay></video>
+                <canvas id="snapshot"></canvas>
+
+                <input asp-for="CapturedImageData" type="hidden" id="CapturedImageData" />
+
+                <div class="camera-actions">
+                    <button type="button" onclick="startCamera()" class="outline-btn">
+                        Open Camera
+                    </button>
+
+                    <button type="button" onclick="capturePhoto()" class="outline-btn green">
+                        Capture Photo
+                    </button>
+                </div>
+
+                <img id="preview" class="photo-preview" />
+            </div>
+        </div>
+
+        <button type="submit" class="submit-report-btn">
+            Save Changes
+        </button>
+
+        <a asp-controller="User"
+           asp-action="MyReports"
+           class="back-link">
+            Back to My Reports
+        </a>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        let cameraStream;
+
+        async function startCamera() {
+            const video = document.getElementById("camera");
+            video.style.display = "block";
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
+
+            video.srcObject = cameraStream;
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById("camera");
+            const canvas = document.getElementById("snapshot");
+            const preview = document.getElementById("preview");
+            const hiddenInput = document.getElementById("CapturedImageData");
+
+            const context = canvas.getContext("2d");
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL("image/png");
+
+            hiddenInput.value = imageData;
+            preview.src = imageData;
+            preview.style.display = "block";
+
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+
+            video.style.display = "none";
+        }
+    </script>
+}

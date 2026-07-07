@@ -1,0 +1,195 @@
+﻿@model List<WasteConnect.Models.Company>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Assign Cleanup Job";
+
+    var report = ViewBag.Report as WasteConnect.Models.DumpingReport;
+
+    var busyCompanyUserIds =
+        ViewBag.BusyCompanyUserIds as List<string> ?? new List<string>();
+}
+
+<div class="assign-job-page">
+
+    <div class="page-hero reports-hero">
+        <div class="page-hero-overlay">
+            <div class="page-hero-content">
+                <span class="hero-icon">🚛</span>
+
+                <div>
+                    <h1>Assign Cleanup Job</h1>
+                    <p>Select an approved company and set the cleanup timeframe for this case.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="assign-report-card">
+
+        <div class="assign-report-image">
+            @if (!string.IsNullOrEmpty(report?.ImageUrl))
+            {
+                <img src="@report.ImageUrl" />
+            }
+            else
+            {
+                <div class="no-image-large">No Image</div>
+            }
+        </div>
+
+        <div class="assign-report-details">
+
+            <h3>@report?.DumpingLocation</h3>
+
+            <div class="info-row">
+                <span>Reported By</span>
+                <strong>@report?.FullName</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Phone Number</span>
+                <strong>@report?.PhoneNumber</strong>
+            </div>
+
+            <div class="info-row">
+                <span>City</span>
+                <strong>@report?.City</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Status</span>
+                <strong>@report?.Status</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="portal-panel">
+
+        <div class="portal-panel-header">
+            <h3>Recommended Companies</h3>
+            <p>Approved companies available for cleanup assignments.</p>
+        </div>
+
+        <table class="portal-documents-table">
+
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Service Area</th>
+                    <th>Contact Person</th>
+                    <th>Status</th>
+                    <th>Assignment Window</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var company in Model)
+                {
+                    bool companyBusy = busyCompanyUserIds.Contains(company.UserId);
+
+                    <tr>
+                        <td>
+                            <strong>@company.CompanyName</strong>
+
+                            @if (companyBusy)
+                            {
+                                <div class="busy-indicator">
+                                    Currently assigned to another cleanup
+                                </div>
+                            }
+                        </td>
+
+                        <td>@company.ServiceArea</td>
+                        <td>@company.ContactPerson</td>
+
+                        <td>
+                            @if (companyBusy)
+                            {
+                                <span class="doc-status pending">Busy</span>
+                            }
+                            else
+                            {
+                                <span class="doc-status uploaded">Available</span>
+                            }
+                        </td>
+
+                        <td>
+                            @if (report?.Status == "Cleaned")
+                            {
+                                <button type="button"
+                                        class="assign-btn disabled-assign"
+                                        disabled>
+                                    Already Cleaned
+                                </button>
+                            }
+                            else if (companyBusy)
+                            {
+                                <button type="button"
+                                        class="assign-btn disabled-assign"
+                                        disabled>
+                                    Busy
+                                </button>
+
+                                <small class="busy-note">
+                                    Company has an active cleanup job.
+                                </small>
+                            }
+                            else
+                            {
+                                <form asp-action="AssignCompanyToReport"
+                                      method="post"
+                                      class="assignment-window">
+
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden" name="reportId" value="@report?.Id" />
+                                    <input type="hidden" name="reportUserId" value="@report?.UserId" />
+                                    <input type="hidden" name="companyId" value="@company.Id" />
+                                    <input type="hidden" name="companyUserId" value="@company.UserId" />
+
+                                    <div class="assignment-grid">
+
+                                        <div class="assignment-field">
+                                            <label>Cleanup Start Date</label>
+                                            <input type="date"
+                                                   name="cleanupStartDate"
+                                                   min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                                                   required />
+                                        </div>
+
+                                        <div class="assignment-field">
+                                            <label>Cleanup Due Date</label>
+                                            <input type="date"
+                                                   name="cleanupDueDate"
+                                                   min="@DateTime.Now.ToString("yyyy-MM-dd")"
+                                                   required />
+                                        </div>
+
+                                        <div class="assignment-field full">
+                                            <label>Cleanup Instructions</label>
+                                            <textarea name="cleanupInstructions"
+                                              rows="3"
+                                              placeholder="Example: Remove all waste, take before and after photos, and dispose waste at an approved disposal site."></textarea>
+                                        </div>
+
+                                    </div>
+
+                                    <button type="submit" class="assign-btn">
+                                        Assign Cleanup Job
+                                    </button>
+
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>

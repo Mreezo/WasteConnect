@@ -1,0 +1,118 @@
+﻿@model WasteConnect.Models.Company
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Company Profile";
+}
+
+<div class="company-profile-modern">
+
+    @if (TempData["ProfileSuccess"] != null)
+    {
+        <div class="success-alert">
+            @TempData["ProfileSuccess"]
+        </div>
+    }
+
+    @if (TempData["ProfileError"] != null)
+    {
+        <div class="error-alert">
+            @TempData["ProfileError"]
+        </div>
+    }
+
+    <div class="company-profile-header">
+
+        <div class="company-avatar-section">
+
+            <div class="company-avatar-large">
+
+                @if (!string.IsNullOrEmpty(Model.ProfileImageUrl))
+                {
+                    <img src="@Model.ProfileImageUrl" alt="Company profile image" />
+                }
+                else
+                {
+                    <span>@Model.CompanyName.Substring(0, 1).ToUpper()</span>
+                }
+
+            </div>
+
+            <form asp-controller="Company"
+                  asp-action="UploadProfileImage"
+                  method="post"
+                  enctype="multipart/form-data"
+                  class="profile-upload-form">
+
+                @Html.AntiForgeryToken()
+
+                <label class="upload-profile-btn">
+                    Change Photo
+                    <input type="file"
+                           name="profileImage"
+                           accept="image/*"
+                           onchange="this.form.submit()" />
+                </label>
+                <a asp-controller="Company"
+                   asp-action="EditCompanyProfile"
+                   class="profile-edit-btn">
+                    Edit Profile
+                </a>
+
+            </form>
+
+        </div>
+
+        <div class="company-profile-title">
+            <h2>@Model.CompanyName</h2>
+            <p>@Model.ServiceArea</p>
+
+            <span class="company-status @Model.Status.ToLower()">
+                @Model.Status
+            </span>
+        </div>
+
+    </div>
+
+    <div class="company-profile-info">
+
+        <div class="profile-info-row">
+            <span>Company Name</span>
+            <strong>@Model.CompanyName</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Registration Number</span>
+            <strong>@Model.RegistrationNumber</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Contact Person</span>
+            <strong>@Model.ContactPerson</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Email</span>
+            <strong>@Model.Email</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Phone Number</span>
+            <strong>@Model.PhoneNumber</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Service Area</span>
+            <strong>@Model.ServiceArea</strong>
+        </div>
+
+        <div class="profile-info-row">
+            <span>Status</span>
+            <strong>@Model.Status</strong>
+        </div>
+
+    </div>
+
+    
+
+</div>

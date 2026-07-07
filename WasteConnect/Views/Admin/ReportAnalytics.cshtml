@@ -1,0 +1,402 @@
+﻿@model WasteConnect.ViewModels.ReportAnalyticsViewModel
+@using System.Text.Json
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Report Analytics";
+
+    var mapPointsJson = JsonSerializer.Serialize(Model.MapPoints);
+    var weeklyJson = JsonSerializer.Serialize(Model.WeeklyReports);
+    var monthlyJson = JsonSerializer.Serialize(Model.MonthlyReports);
+
+    var hotspots = Model.MapPoints
+        .GroupBy(x => x.Location)
+        .Select(g => new
+        {
+            Location = g.Key,
+            Reports = g.Sum(x => x.ReportedBy),
+            HighestPriority = g.Any(x => x.Priority == "High") ? "High" :
+                              g.Any(x => x.Priority == "Medium") ? "Medium" : "Low"
+        })
+        .OrderByDescending(x => x.Reports)
+        .Take(5)
+        .ToList();
+}
+
+<link rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="analytics-page">
+
+    <div class="page-hero analytics-hero">
+
+        <div class="page-hero-overlay">
+
+            <div class="page-hero-content">
+
+                <span class="hero-icon">
+                    📊
+                </span>
+
+                <div>
+
+                    <h1>Report Analytics</h1>
+
+                    <p>
+                        Monitor illegal dumping reports,
+                        cleanup progress,
+                        and hotspot areas.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="analytics-kpi-grid">
+        <div class="analytics-kpi total-kpi">
+            <span>Total Reports</span>
+            <strong>@Model.TotalReports</strong>
+        </div>
+
+        <div class="analytics-kpi pending-kpi">
+            <span>Pending</span>
+            <strong>@Model.PendingReports</strong>
+        </div>
+
+        <div class="analytics-kpi assigned-kpi">
+            <span>Assigned</span>
+            <strong>@Model.AssignedReports</strong>
+        </div>
+
+        <div class="analytics-kpi progress-kpi">
+            <span>In Progress</span>
+            <strong>@Model.InProgressReports</strong>
+        </div>
+
+        <div class="analytics-kpi cleaned-kpi">
+            <span>Cleaned</span>
+            <strong>@Model.CleanedReports</strong>
+        </div>
+    </div>
+
+    <div class="analytics-filter-bar">
+        <div>
+            <label>Status Filter</label>
+            <select id="statusFilter" onchange="applyStatusFilter()">
+                <option value="All">All Reports</option>
+                <option value="Pending">Pending</option>
+                <option value="Assigned">Assigned</option>
+                <option value="In Progress">In Progress</option>
+                <option value="Cleaned">Cleaned</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Chart View</label>
+            <div class="analytics-toggle">
+                <button type="button" id="weeklyBtn" class="active" onclick="showWeeklyChart()">
+                    Weekly
+                </button>
+
+                <button type="button" id="monthlyBtn" onclick="showMonthlyChart()">
+                    Monthly
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="analytics-map-status-grid">
+
+        <div class="analytics-panel">
+            <div class="portal-panel-header">
+                <h3>Reported Areas Map</h3>
+                <p>Map showing illegal dumping report locations captured through Azure Maps.</p>
+            </div>
+
+            <div id="reportAnalyticsMap"></div>
+        </div>
+
+        <div class="analytics-panel">
+            <div class="portal-panel-header">
+                <h3>Reports By Status</h3>
+                <p>Percentage breakdown of reports by current cleanup status.</p>
+            </div>
+
+            <div class="status-pie-wrapper">
+                <canvas id="statusPieChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="analytics-chart-grid">
+
+        <div class="analytics-panel" id="weeklyChartPanel">
+            <div class="portal-panel-header">
+                <h3>Weekly Reports</h3>
+                <p>Reports submitted per week.</p>
+            </div>
+
+            <canvas id="weeklyReportsChart"></canvas>
+        </div>
+
+        <div class="analytics-panel hidden-chart" id="monthlyChartPanel">
+            <div class="portal-panel-header">
+                <h3>Monthly Reports</h3>
+                <p>Reports submitted per month.</p>
+            </div>
+
+            <canvas id="monthlyReportsChart"></canvas>
+        </div>
+
+        <div class="analytics-panel">
+            <div class="portal-panel-header">
+                <h3>Top Hotspot Areas</h3>
+                <p>Areas with the highest number of community reports.</p>
+            </div>
+
+            @if (!hotspots.Any())
+            {
+                <p class="analytics-empty-text">No hotspot data available yet.</p>
+            }
+            else
+            {
+                <table class="hotspot-table">
+                    <thead>
+                        <tr>
+                            <th>Area</th>
+                            <th>Reports</th>
+                            <th>Priority</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var item in hotspots)
+                        {
+                            <tr>
+                                <td>@item.Location</td>
+                                <td>@item.Reports</td>
+                                <td>
+                                    <span class="priority-badge @item.HighestPriority.ToLower()">
+                                        @item.HighestPriority
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
+    <script>
+        const azureKey = '@ViewBag.AzureMapsKey';
+
+        const mapPoints = @Html.Raw(mapPointsJson);
+        const weeklyReports = @Html.Raw(weeklyJson);
+        const monthlyReports = @Html.Raw(monthlyJson);
+
+                const statusReports = [
+            { label: "Pending", count: @Model.PendingReports },
+            { label: "Assigned", count: @Model.AssignedReports },
+            { label: "In Progress", count: @Model.InProgressReports },
+            { label: "Cleaned", count: @Model.CleanedReports }
+        ];
+
+        let reportMap;
+        let currentMarkers = [];
+        let reportPopup;
+        let weeklyChart;
+        let monthlyChart;
+
+                document.addEventListener("DOMContentLoaded", function () {
+            loadReportMap();
+            loadWeeklyChart();
+            loadMonthlyChart();
+            loadStatusPieChart();
+        });
+
+        function loadReportMap() {
+            reportMap = new atlas.Map("reportAnalyticsMap", {
+                center: [30.3920, -29.6006],
+                zoom: 11,
+                authOptions: {
+                    authType: "subscriptionKey",
+                    subscriptionKey: azureKey
+                }
+            });
+
+            reportMap.events.add("ready", function () {
+                reportPopup = new atlas.Popup({
+                    pixelOffset: [0, -30]
+                });
+
+                renderMarkers(mapPoints);
+            });
+        }
+
+        function renderMarkers(points) {
+            currentMarkers.forEach(marker => {
+                reportMap.markers.remove(marker);
+            });
+
+            currentMarkers = [];
+
+            points.forEach(point => {
+                const marker = new atlas.HtmlMarker({
+                    color: getMarkerColor(point.Status),
+                    text: "!",
+                    position: [point.Longitude, point.Latitude]
+                });
+
+                reportMap.markers.add(marker);
+                currentMarkers.push(marker);
+
+                reportMap.events.add("click", marker, function () {
+                    const popupContent = `
+                        <div class="map-report-popup">
+                            <h3>${point.Location}</h3>
+
+                            <div class="map-popup-row">
+                                <span>Status</span>
+                                <strong>${point.Status}</strong>
+                            </div>
+
+                            <div class="map-popup-row">
+                                <span>Priority</span>
+                                <strong>${point.Priority}</strong>
+                            </div>
+
+                            <div class="map-popup-row">
+                                <span>Reported By</span>
+                                <strong>${point.ReportedBy} people</strong>
+                            </div>
+                        </div>
+                    `;
+
+                    reportPopup.setOptions({
+                        content: popupContent,
+                        position: [point.Longitude, point.Latitude]
+                    });
+
+                    reportPopup.open(reportMap);
+                });
+            });
+        }
+
+        function applyStatusFilter() {
+            const selectedStatus = document.getElementById("statusFilter").value;
+
+            if (selectedStatus === "All") {
+                renderMarkers(mapPoints);
+                return;
+            }
+
+            const filteredPoints =
+                mapPoints.filter(x => x.Status === selectedStatus);
+
+            renderMarkers(filteredPoints);
+        }
+
+        function getMarkerColor(status) {
+            if (status === "Cleaned") return "Green";
+            if (status === "In Progress") return "DodgerBlue";
+            if (status === "Assigned") return "Orange";
+            return "Red";
+        }
+
+        function loadWeeklyChart() {
+            weeklyChart = new Chart(document.getElementById("weeklyReportsChart"), {
+                type: "line",
+                data: {
+                    labels: weeklyReports.map(x => x.Label),
+                    datasets: [{
+                        label: "Reports",
+                        data: weeklyReports.map(x => x.Count),
+                        tension: 0.35,
+                        fill: false
+                    }]
+                }
+            });
+        }
+
+        function loadMonthlyChart() {
+            monthlyChart = new Chart(document.getElementById("monthlyReportsChart"), {
+                type: "bar",
+                data: {
+                    labels: monthlyReports.map(x => x.Label),
+                    datasets: [{
+                        label: "Reports",
+                        data: monthlyReports.map(x => x.Count)
+                    }]
+                }
+            });
+        }
+
+                function loadStatusPieChart() {
+            new Chart(document.getElementById("statusPieChart"), {
+                type: "pie",
+                data: {
+                    labels: statusReports.map(x => x.label),
+                    datasets: [{
+                        data: statusReports.map(x => x.count),
+                        backgroundColor: [
+                            "#ef4444",  // Pending - Red
+                            "#f59e0b",  // Assigned - Orange
+                            "#1e90ff",  // In Progress - Blue
+                            "#16a34a"   // Cleaned - Green
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: "bottom"
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    const total = statusReports.reduce((sum, item) => sum + item.count, 0);
+                                    const value = context.raw;
+                                    const percentage = total === 0 ? 0 : ((value / total) * 100).toFixed(1);
+
+                                    return `${context.label}: ${percentage}% (${value})`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function showWeeklyChart() {
+            document.getElementById("weeklyChartPanel").classList.remove("hidden-chart");
+            document.getElementById("monthlyChartPanel").classList.add("hidden-chart");
+
+            document.getElementById("weeklyBtn").classList.add("active");
+            document.getElementById("monthlyBtn").classList.remove("active");
+        }
+
+        function showMonthlyChart() {
+            document.getElementById("monthlyChartPanel").classList.remove("hidden-chart");
+            document.getElementById("weeklyChartPanel").classList.add("hidden-chart");
+
+            document.getElementById("monthlyBtn").classList.add("active");
+            document.getElementById("weeklyBtn").classList.remove("active");
+        }
+    </script>
+
+}

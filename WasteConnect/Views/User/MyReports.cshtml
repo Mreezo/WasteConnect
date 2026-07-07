@@ -1,0 +1,147 @@
+﻿@model List<WasteConnect.Models.DumpingReport>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "My Reports";
+}
+
+<div class="reports-header">
+    <h2>My Reports</h2>
+    <p>Track and manage your submitted illegal dumping reports.</p>
+</div>
+
+@if (TempData["DeleteSuccess"] != null)
+{
+    <div id="deleteToast" class="delete-toast">
+        <span>✓</span>
+        <p>@TempData["DeleteSuccess"]</p>
+    </div>
+}
+@if (TempData["ReportMessage"] != null)
+{
+    <div id="reportPopup" class="report-popup">
+        <div class="report-popup-box">
+            <h3>Existing Case Found</h3>
+            <p>@TempData["ReportMessage"]</p>
+
+            <button onclick="closeReportPopup()">
+                OK
+            </button>
+        </div>
+    </div>
+}
+@if (!Model.Any())
+{
+    <div class="empty-reports">
+        <h3>No Reports Found</h3>
+        <p>You have not submitted any illegal dumping reports yet.</p>
+    </div>
+}
+else
+{
+    <div class="reports-grid">
+        @foreach (var report in Model)
+        {
+            <div class="report-card">
+                <div class="report-image">
+                    @if (!string.IsNullOrEmpty(report.ImageUrl))
+                    {
+                        <img src="@report.ImageUrl" />
+                    }
+                    else
+                    {
+                        <div class="no-image">No Image</div>
+                    }
+
+                    <div class="status-badge @report.Status.ToLower().Replace(" ", "")">
+                        @report.Status
+                    </div>
+                </div>
+
+                <div class="report-content">
+                    <h3>@report.DumpingLocation</h3>
+
+                    <p><strong>City:</strong> @report.City</p>
+                    <p><strong>Submitted:</strong> @report.CreatedAt.ToString("dd MMM yyyy")</p>
+
+                    <div class="report-actions">
+                        @if (report.Status == "Pending")
+                        {
+                            <a asp-action="EditReport"
+                               asp-route-id="@report.Id"
+                               class="edit-btn">
+                                Edit
+                            </a>
+
+                            <button type="button"
+                                    class="delete-btn"
+                                    onclick="openDeleteModal('@report.Id')">
+                                Delete
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+<div id="deleteModal" class="delete-modal">
+    <div class="delete-modal-box">
+        <div class="delete-icon">!</div>
+
+        <h3>Delete Report?</h3>
+
+        <p>
+            Are you sure you want to delete this report?
+            This action cannot be undone.
+        </p>
+
+        <div class="delete-modal-actions">
+            <button type="button"
+                    class="cancel-delete-btn"
+                    onclick="closeDeleteModal()">
+                Cancel
+            </button>
+
+            <a id="confirmDeleteBtn"
+               class="confirm-delete-btn">
+                Yes, Delete
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const deleteModal = document.getElementById("deleteModal");
+        const confirmDeleteBtn = document.getElementById("confirmDeleteBtn");
+
+        function openDeleteModal(reportId) {
+            confirmDeleteBtn.href = `/User/DeleteReport?id=${reportId}`;
+            deleteModal.classList.add("show");
+        }
+
+        function closeDeleteModal() {
+            deleteModal.classList.remove("show");
+        }
+          function closeReportPopup() {
+            document.getElementById("reportPopup").style.display = "none";
+        }
+        deleteModal.addEventListener("click", function (e) {
+            if (e.target === deleteModal) {
+                closeDeleteModal();
+            }
+        });
+
+        const deleteToast = document.getElementById("deleteToast");
+
+        if (deleteToast) {
+            setTimeout(() => {
+                deleteToast.remove();
+            }, 5000);
+        }
+             
+        
+    </script>
+}

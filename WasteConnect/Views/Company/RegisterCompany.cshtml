@@ -1,0 +1,163 @@
+﻿@model WasteConnect.ViewModels.CompanyRegistrationViewModel
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Register Company";
+}
+
+<div class="company-registration-page">
+
+    <div class="company-header">
+
+        @if (TempData["CompanySuccess"] != null)
+        {
+            <div id="companyToast" class="success-toast">
+                <span>✓</span>
+                <p>@TempData["CompanySuccess"]</p>
+            </div>
+        }
+        <div>
+            <h2>Register Your Waste Management Company</h2>
+            <p>
+                Complete the registration form and upload the required
+                documentation for approval.
+            </p>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="success-alert">
+            @TempData["Success"]
+        </div>
+    }
+
+    <form asp-action="RegisterCompany"
+          method="post"
+          enctype="multipart/form-data"
+          class="company-form">
+
+        <div asp-validation-summary="All"
+             class="text-danger mb-3">
+        </div>
+
+        <div class="form-grid">
+
+            <div class="form-group">
+                <label asp-for="CompanyName"></label>
+                <input asp-for="CompanyName" class="form-control" />
+                <span asp-validation-for="CompanyName"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="RegistrationNumber"></label>
+                <input asp-for="RegistrationNumber" class="form-control" />
+                <span asp-validation-for="RegistrationNumber"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ContactPerson"></label>
+                <input asp-for="ContactPerson" class="form-control" />
+                <span asp-validation-for="ContactPerson"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Email"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="PhoneNumber"></label>
+                <input asp-for="PhoneNumber" class="form-control" />
+                <span asp-validation-for="PhoneNumber"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ServiceArea"></label>
+                <input asp-for="ServiceArea"
+                       class="form-control"
+                       placeholder="e.g Pietermaritzburg, Midlands, Durban" />
+                <span asp-validation-for="ServiceArea"></span>
+            </div>
+
+            <div class="form-group full-width">
+                <label asp-for="Address"></label>
+                <input asp-for="Address" class="form-control" />
+                <span asp-validation-for="Address"></span>
+            </div>
+
+            <div class="form-group full-width">
+                <label asp-for="Description"></label>
+                <textarea asp-for="Description"
+                          class="form-control"
+                          rows="5"
+                          placeholder="Describe the waste management services your company provides.">
+                </textarea>
+                <span asp-validation-for="Description"></span>
+            </div>
+
+        </div>
+
+        <div class="documents-section">
+
+            <h3>Required Documents (PDF Only)</h3>
+
+            <div class="document-grid">
+
+                <div class="document-card">
+                    <label>Company Registration Certificate</label>
+                    <input asp-for="CompanyRegistration"
+                           type="file"
+                           accept=".pdf" />
+                </div>
+
+                <div class="document-card">
+                    <label>Waste Management License</label>
+                    <input asp-for="WasteLicense"
+                           type="file"
+                           accept=".pdf" />
+                </div>
+
+                <div class="document-card">
+                    <label>Tax Clearance Certificate</label>
+                    <input asp-for="TaxClearance"
+                           type="file"
+                           accept=".pdf" />
+                </div>
+
+                <div class="document-card">
+                    <label>Insurance Certificate (Optional)</label>
+                    <input asp-for="InsuranceCertificate"
+                           type="file"
+                           accept=".pdf" />
+                </div>
+
+            </div>
+
+        </div>
+
+        <button type="submit" class="submit-company-btn">
+            Submit Company Registration
+        </button>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <script>
+        const companyToast =
+            document.getElementById("companyToast");
+
+        if (companyToast) {
+
+            setTimeout(() => {
+
+                companyToast.remove();
+
+            }, 5000);
+        }
+    </script>
+    <partial name="_ValidationScriptsPartial" />
+}

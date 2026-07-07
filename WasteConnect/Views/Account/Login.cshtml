@@ -1,0 +1,66 @@
+﻿@model WasteConnect.ViewModels.LoginViewModel
+
+@{
+    Layout = "_AuthLayout";
+    ViewData["Title"] = "Login";
+}
+
+<div class="auth-page">
+    <div class="auth-overlay"></div>
+
+    @if (TempData["PasswordResetSuccess"] != null)
+    {
+        <div class="success-alert">
+            @TempData["PasswordResetSuccess"]
+        </div>
+    }
+
+    <div class="auth-card">
+        <h2>Welcome Back</h2>
+        <p>Login to continue to Waste Connect.</p>
+
+        <form asp-action="Login" asp-controller="Account" method="post">
+            @Html.AntiForgeryToken()
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="form-group">
+                <label asp-for="EmailOrPhone"></label>
+                <input asp-for="EmailOrPhone" class="form-control" placeholder="Enter email or phone number" />
+                <span asp-validation-for="EmailOrPhone" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Password"></label>
+                <input asp-for="Password" class="form-control" placeholder="Enter password" />
+                <span asp-validation-for="Password" class="text-danger"></span>
+            </div>
+
+            <div class="remember-row">
+                <input asp-for="RememberMe" />
+                <label asp-for="RememberMe"></label>
+            </div>
+
+            <button type="submit" class="auth-btn">
+                Login
+            </button>
+
+            <div class="auth-links">
+                <a asp-action="ForgotPassword" asp-controller="Account">
+                    Forgot Password?
+                </a>
+            </div>
+
+            <div class="auth-links">
+                Don't have an account?
+                <a asp-action="Register" asp-controller="Account">
+                    Register
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

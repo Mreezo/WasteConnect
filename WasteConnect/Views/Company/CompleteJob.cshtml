@@ -1,0 +1,161 @@
+﻿@model WasteConnect.ViewModels.CompleteJobViewModel
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Complete Cleanup Job";
+}
+
+<div class="complete-job-page">
+
+    <div class="portal-page-header">
+        <div>
+            <h2>Complete Cleanup Job</h2>
+            <p>Submit proof that the illegal dumping site has been cleaned.</p>
+        </div>
+    </div>
+
+    <form asp-controller="Company"
+          asp-action="CompleteJob"
+          method="post"
+          enctype="multipart/form-data"
+          class="complete-job-form">
+
+        @Html.AntiForgeryToken()
+
+        <input asp-for="ReportId" type="hidden" />
+        <input asp-for="ReportUserId" type="hidden" />
+        <input asp-for="BeforeImageUrl" type="hidden" />
+        <input asp-for="DumpingLocation" type="hidden" />
+        <input asp-for="Status" type="hidden" />
+
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="before-after-grid">
+
+            <div class="before-after-card">
+                <h3>Before Cleanup</h3>
+
+                @if (!string.IsNullOrEmpty(Model.BeforeImageUrl))
+                {
+                    <img src="@Model.BeforeImageUrl" />
+                }
+                else
+                {
+                    <div class="no-image-large">No Before Image</div>
+                }
+
+                <p>@Model.DumpingLocation</p>
+            </div>
+
+            <div class="before-after-card">
+                <h3>After Cleanup</h3>
+
+                <input asp-for="AfterCleanupImage"
+                       type="file"
+                       accept="image/*" />
+
+                <video id="afterCamera"
+                       autoplay
+                       playsinline
+                       muted></video>
+                <canvas id="afterSnapshot"></canvas>
+
+                <input asp-for="CapturedAfterImageData"
+                       type="hidden"
+                       id="CapturedAfterImageData" />
+
+                <div class="camera-actions">
+                    <button type="button"
+                            onclick="startAfterCamera()"
+                            class="outline-btn">
+                        Open Camera
+                    </button>
+
+                    <button type="button"
+                            onclick="captureAfterPhoto()"
+                            class="outline-btn green">
+                        Capture Photo
+                    </button>
+                </div>
+
+                <img id="afterPreview" class="photo-preview" />
+            </div>
+
+        </div>
+
+        <div class="completion-notes-card">
+            <label asp-for="CompletionNotes"></label>
+            <textarea asp-for="CompletionNotes"
+                      placeholder="Example: Site cleaned, bags removed, area swept."></textarea>
+        </div>
+
+        <button type="submit" class="submit-report-btn">
+            Submit Completion Proof
+        </button>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        let afterCameraStream;
+
+        async function startAfterCamera() {
+            try {
+                const video = document.getElementById("afterCamera");
+
+                video.style.display = "block";
+
+                afterCameraStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: "environment"
+                    },
+                    audio: false
+                });
+
+                video.srcObject = afterCameraStream;
+
+                await video.play();
+            }
+            catch (error) {
+                alert("Camera could not be opened. Please allow camera permission or upload an after-cleanup photo.");
+                console.error(error);
+            }
+        }
+
+        function captureAfterPhoto() {
+            const video = document.getElementById("afterCamera");
+            const canvas = document.getElementById("afterSnapshot");
+            const preview = document.getElementById("afterPreview");
+            const hiddenInput = document.getElementById("CapturedAfterImageData");
+
+            if (!video.srcObject) {
+                alert("Please open the camera first.");
+                return;
+            }
+
+            const context = canvas.getContext("2d");
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL("image/png");
+
+            hiddenInput.value = imageData;
+            preview.src = imageData;
+            preview.style.display = "block";
+
+            if (afterCameraStream) {
+                afterCameraStream.getTracks().forEach(track => track.stop());
+            }
+
+            video.srcObject = null;
+            video.style.display = "none";
+        }
+    </script>
+}

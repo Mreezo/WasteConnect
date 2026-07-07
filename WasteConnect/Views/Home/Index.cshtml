@@ -1,0 +1,131 @@
+﻿@{
+    ViewData["Title"] = "Waste Connect";
+}
+
+<div class="home-page">
+
+    <nav class="wc-navbar">
+        <div class="wc-logo">
+            <img src="~/images/logo.png" alt="Waste Connect Logo" class="logo-image" />
+
+            <div>
+                <strong>Waste Connect</strong>
+                <small>Smart Waste Management</small>
+            </div>
+        </div>
+
+        <div class="wc-nav-links">
+            <a asp-controller="Home" asp-action="About">About Us</a>
+            <a asp-controller="Home" asp-action="Index">Home</a>
+            <a href="#">Services</a>
+            <a href="#">Companies</a>
+            <a href="#">Contact Us</a>
+        </div>
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="login-btn">
+            Login
+        </a>
+        <a asp-controller="Account"
+           asp-action="Register"
+           class="quote-btn">
+            Register
+        </a>
+    </nav>
+
+    <section class="hero-section">
+        <div class="hero-slide active"></div>
+        <div class="hero-slide"></div>
+        <div class="hero-slide"></div>
+        <div class="hero-slide"></div>
+
+        <div class="hero-overlay"></div>
+
+        <div class="hero-content">
+            <h1>
+                Smart Waste Solutions for Cleaner Communities
+            </h1>
+
+            <p>
+                Waste Connect links communities, waste management companies and municipalities
+                through one intelligent digital platform.
+            </p>
+        </div>
+
+        <a asp-controller="Account"
+           asp-action="Register"
+           class="primary-btn">
+            Get Started
+        </a>
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="secondary-btn">
+            Login
+        </a>
+    </section>
+
+    <section class="users-section">
+        <div class="container">
+            <h2>Who Uses Waste Connect?</h2>
+            <p class="section-subtitle">
+                A platform designed for communities, service providers and municipalities.
+            </p>
+
+            <div class="users-grid">
+                <div class="user-card">
+                    <div class="card-icon">👥</div>
+                    <h3>Community Users</h3>
+                    <p>
+                        Report illegal dumping, upload images, track progress and find nearby disposal sites.
+                    </p>
+                </div>
+
+                <div class="user-card">
+                    <div class="card-icon">🚛</div>
+                    <h3>Waste Companies</h3>
+                    <p>
+                        Register your company, advertise services and connect with communities needing waste solutions.
+                    </p>
+                </div>
+
+                <div class="user-card">
+                    <div class="card-icon">🏛️</div>
+                    <h3>Municipalities</h3>
+                    <p>
+                        Monitor waste reports, identify hotspots and improve service delivery through analytics.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+@section Scripts {
+
+    <script>
+        const imagePaths = [
+            "/images/waste.jpeg",
+            "/images/Dump.jpeg",
+            "/images/connect.jpeg",
+            "/images/slide4.jpg"
+        ];
+
+        const slides = document.querySelectorAll(".hero-slide");
+
+        slides.forEach((slide, index) => {
+            slide.style.backgroundImage = `url('${imagePaths[index]}')`;
+        });
+
+        let currentSlide = 0;
+
+        setInterval(() => {
+            slides[currentSlide].classList.remove("active");
+
+            currentSlide = (currentSlide + 1) % slides.length;
+
+            slides[currentSlide].classList.add("active");
+        }, 10000);
+    </script>
+
+
+}

@@ -1,0 +1,241 @@
+﻿@model WasteConnect.Models.DumpingReport
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Report Details";
+}
+
+<div class="report-details-page">
+
+    <div class="page-hero reports-hero">
+        <div class="page-hero-overlay">
+            <div class="page-hero-content">
+                <span class="hero-icon">📍</span>
+
+                <div>
+                    <h1>Illegal Dumping Case</h1>
+                    <p>Review the full report, evidence, community activity and cleanup assignment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="report-summary-grid">
+
+        <div class="summary-card">
+            <h5>Status</h5>
+            <span class="details-status @Model.Status.ToLower().Replace(" ", "")">
+                @Model.Status
+            </span>
+        </div>
+
+        <div class="summary-card">
+            <h5>Priority</h5>
+            <span class="priority-badge @Model.Priority.ToLower()">
+                @Model.Priority
+            </span>
+        </div>
+
+        <div class="summary-card">
+            <h5>Community Reports</h5>
+            <strong>@Model.DuplicateCount Residents</strong>
+        </div>
+
+        <div class="summary-card">
+            <h5>Last Reported</h5>
+            <strong>@Model.LastReportedAt.ToString("dd MMM yyyy HH:mm")</strong>
+        </div>
+
+    </div>
+
+    <div class="details-grid">
+
+        <div class="details-image-card">
+            @if (!string.IsNullOrEmpty(Model.ImageUrl))
+            {
+                <img src="@Model.ImageUrl" alt="Illegal dumping photo" />
+            }
+            else
+            {
+                <div class="no-image-large">
+                    No Image Uploaded
+                </div>
+            }
+        </div>
+
+        <div class="details-info-card">
+            <h3>Report Information</h3>
+
+            <div class="info-row">
+                <span>Reporter Name</span>
+                <strong>@Model.FullName</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Phone Number</span>
+                <strong>@Model.PhoneNumber</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Dumping Location</span>
+                <strong>@Model.DumpingLocation</strong>
+            </div>
+
+            <div class="info-row">
+                <span>City</span>
+                <strong>@Model.City</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Submitted Date</span>
+                <strong>@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Coordinates</span>
+                <strong>@Model.DumpLatitude, @Model.DumpLongitude</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="case-section-grid">
+
+        <div class="details-info-card">
+            <h3>Cleanup Assignment</h3>
+
+            @if (!string.IsNullOrEmpty(Model.AssignedCompanyName))
+            {
+                <div class="info-row">
+                    <span>Assigned Company</span>
+                    <strong>@Model.AssignedCompanyName</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Assigned Date</span>
+                    <strong>@(Model.AssignedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not available")</strong>
+                </div>
+
+                <div class="info-row">
+                    <span>Current Status</span>
+                    <strong>@Model.Status</strong>
+                </div>
+            }
+            else
+            {
+                <p class="empty-small-text">
+                    This case has not been assigned to a cleanup company yet.
+                </p>
+            }
+        </div>
+
+        <div class="details-info-card">
+            <h3>Case Activity</h3>
+
+            <div class="info-row">
+                <span>First Reported</span>
+                <strong>@Model.CreatedAt.ToString("dd MMM yyyy HH:mm")</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Last Reported</span>
+                <strong>@Model.LastReportedAt.ToString("dd MMM yyyy HH:mm")</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Residents Reported</span>
+                <strong>@Model.DuplicateCount</strong>
+            </div>
+
+            <div class="info-row">
+                <span>Master Case</span>
+                <strong>@(Model.IsMasterReport ? "Yes" : "No")</strong>
+            </div>
+        </div>
+
+    </div>
+
+    @if (Model.AdditionalImageUrls != null && Model.AdditionalImageUrls.Any())
+    {
+        <div class="additional-images-section">
+            <h3>Community Submitted Photos</h3>
+
+            <p>
+                Additional evidence submitted by nearby residents linked to this case.
+            </p>
+
+            <div class="additional-images-grid">
+                @foreach (var image in Model.AdditionalImageUrls)
+                {
+                    <img src="@image"
+                         alt="Community Photo"
+                         class="community-image" />
+                }
+            </div>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.AfterCleanupImageUrl))
+    {
+        <div class="additional-images-section">
+            <h3>Cleanup Completion Proof</h3>
+
+            <p>
+                Before and after evidence submitted by the assigned company.
+            </p>
+
+            <div class="completed-before-after">
+                <div>
+                    <h4>Before Cleanup</h4>
+                    <img src="@Model.ImageUrl" />
+                </div>
+
+                <div>
+                    <h4>After Cleanup</h4>
+                    <img src="@Model.AfterCleanupImageUrl" />
+                </div>
+            </div>
+
+            @if (!string.IsNullOrEmpty(Model.CompletionNotes))
+            {
+                <div class="info-row">
+                    <span>Completion Notes</span>
+                    <strong>@Model.CompletionNotes</strong>
+                </div>
+            }
+        </div>
+    }
+
+    <div class="details-actions case-actions">
+
+        <a asp-controller="Admin"
+           asp-action="Reports"
+           class="back-admin-btn">
+            Back to Reports
+        </a>
+
+        @if (Model.Status != "Cleaned" &&
+                string.IsNullOrEmpty(Model.AssignedCompanyUserId))
+        {
+            <a asp-controller="Admin"
+               asp-action="AssignJob"
+               asp-route-reportId="@Model.Id"
+               asp-route-reportUserId="@Model.UserId"
+               class="back-admin-btn">
+                Assign Job
+            </a>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.DumpingLocation))
+        {
+            <a href="https://www.google.com/maps/search/?api=1&query=@($"{Model.DumpingLocation}, {Model.City}")"
+               target="_blank"
+               class="back-admin-btn">
+                Navigate
+            </a>
+        }
+
+    </div>
+
+</div>

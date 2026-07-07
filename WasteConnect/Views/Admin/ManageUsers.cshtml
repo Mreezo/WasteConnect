@@ -1,0 +1,145 @@
+﻿@model List<WasteConnect.Models.ApplicationUser>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Manage Users";
+}
+
+<div class="page-hero manage-users-hero">
+
+    <div class="page-hero-overlay">
+
+        <div class="page-hero-content">
+
+            <span class="hero-icon">👥</span>
+
+            <div>
+                <h1>Manage Users</h1>
+                <p>
+                    View and manage all registered community members using WasteConnect.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="table-toolbar">
+
+    <form asp-action="ManageUsers"
+          method="get"
+          class="search-form">
+
+        <input type="text"
+               name="search"
+               value="@Context.Request.Query["search"]"
+               placeholder="Search by full name, email or address..." />
+
+        <button type="submit">
+            Search
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(Context.Request.Query["search"]))
+        {
+            <a asp-action="ManageUsers"
+               class="clear-search-btn">
+                Clear
+            </a>
+        }
+
+    </form>
+
+</div>
+
+<div class="admin-report-table-wrapper">
+
+    <table class="admin-report-table">
+
+        <thead>
+
+            <tr>
+                <th>Profile</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Home Address</th>
+                <th>Action</th>
+            </tr>
+
+        </thead>
+
+        <tbody>
+
+            @if (!Model.Any())
+            {
+                <tr>
+
+                    <td colspan="6" style="text-align:center;padding:60px;">
+
+                        <h3>No Users Found</h3>
+
+                        <p>
+                            No users match your search.
+                        </p>
+
+                    </td>
+
+                </tr>
+            }
+            else
+            {
+                @foreach (var user in Model)
+                {
+                    <tr>
+
+                        <td>
+
+                            <div class="table-user-avatar">
+
+                                @if (!string.IsNullOrEmpty(user.ProfileImageUrl))
+                                {
+                                    <img src="@user.ProfileImageUrl" />
+                                }
+                                else
+                                {
+                                    <span>
+                                        @user.FullName.Substring(0, 1).ToUpper()
+                                    </span>
+                                }
+
+                            </div>
+
+                        </td>
+
+                        <td>@user.FullName</td>
+
+                        <td>@user.Email</td>
+
+                        <td>@user.PhoneNumber</td>
+
+                        <td>@user.HomeAddress</td>
+
+                        <td>
+
+                            <a asp-controller="Admin"
+                               asp-action="UserProfile"
+                               asp-route-id="@user.Id"
+                               class="view-report-btn">
+
+                                View Profile
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+                }
+            }
+
+        </tbody>
+
+    </table>
+
+</div>

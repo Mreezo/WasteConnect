@@ -1,0 +1,302 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using WasteConnect.Models
+@inject UserManager<ApplicationUser> UserManager
+
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+    var fullName = currentUser?.FullName ?? "User";
+
+    var roleName = "Community Member";
+
+    if (User.IsInRole("Admin"))
+    {
+        roleName = "Administrator";
+    }
+    else if (User.IsInRole("Company"))
+    {
+        roleName = "Company Representative";
+    }
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - Waste Connect</title>
+
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+</head>
+
+<body class="
+@(User.IsInRole("User") ? "user-page" : "")
+@(User.IsInRole("Admin") ? "admin-page" : "")
+@(User.IsInRole("Company") ? "company-page" : "")">
+
+    <button class="menu-toggle" onclick="toggleSidebar()">
+        ☰
+    </button>
+
+    <div id="sidebarOverlay"
+         class="sidebar-overlay"
+         onclick="toggleSidebar()">
+    </div>
+
+    <div class="dashboard-wrapper">
+
+        <aside id="sidebar" class="sidebar">
+
+            <div class="sidebar-brand">
+                <img src="~/images/logo.png"
+                     alt="Waste Connect Logo"
+                     class="sidebar-logo" />
+
+                <div>
+                    <h2>
+                        <span class="brand-blue">Waste</span><span class="brand-green">Connect</span>
+                    </h2>
+                    <p>Municipal Operations Platform</p>
+                </div>
+            </div>
+
+            <nav class="sidebar-menu">
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <a asp-controller="Admin" asp-action="Dashboard">📊 Admin Dashboard</a>
+                    <a asp-controller="Admin" asp-action="ManageUsers">👥 Manage Users</a>
+                    <a asp-controller="Admin" asp-action="ManageCompanies">🏢 Manage Companies</a>
+                    <a asp-controller="Admin" asp-action="Reports">📍 Reports</a>
+                    <div class="sidebar-dropdown">
+                        <button type="button"
+                                class="sidebar-dropdown-btn"
+                                onclick="toggleAnalyticsDropdown()">
+                            📈 Analytics
+                            <span>⌄</span>
+                        </button>
+
+                        <div id="analyticsDropdown" class="sidebar-dropdown-menu">
+                            <a asp-controller="Admin" asp-action="ReportAnalytics">
+                                Report Analytics
+                            </a>
+
+                            <a asp-controller="Admin" asp-action="CommunityAnalytics">
+                                Community Analytics
+                            </a>
+                        </div>
+                    </div>
+                }
+
+                @if (User.IsInRole("Company"))
+                {
+                    <a asp-controller="Company" asp-action="Dashboard">📊 Company Dashboard</a>
+                    <a asp-controller="Company" asp-action="CompanyProfile">🏢 Company Profile</a>
+                    <a asp-controller="Company" asp-action="RegisterCompany">📝 Register Company</a>
+                    <a asp-controller="Company" asp-action="AssignedJobs">🚛 Assigned Jobs</a>
+                    <a asp-controller="Company" asp-action="CompletedJobs">✔ Completed Jobs</a>
+                    <a asp-controller="DisposalSite" asp-action="CompanyDisposalSite"> ♻ Nearest Waste Disposal Facility </a>
+                }
+
+                @if (User.IsInRole("User"))
+                {
+                    <a asp-controller="User" asp-action="Dashboard">📊 User Dashboard</a>
+                    <a asp-controller="User" asp-action="ReportDumping">🗑 Report Illegal Dumping</a>
+                    <a asp-controller="User" asp-action="MyReports">📄 My Reports</a>
+                    <a asp-controller="DisposalSite" asp-action="FindDisposalSite">📍 Find Disposal Site</a>
+                    <a asp-controller="User" asp-action="Profile">👤 Profile</a>
+                    <a href="#">🔔 Notifications</a>
+                }
+
+            </nav>
+
+            <form asp-controller="Account"
+                  asp-action="Logout"
+                  method="post"
+                  class="logout-form">
+
+                @Html.AntiForgeryToken()
+
+                <button type="submit">
+                    Logout
+                </button>
+            </form>
+
+        </aside>
+
+        <main class="main-content">
+
+            <header class="topbar">
+
+                <div class="topbar-left">
+
+                    <div class="topbar-brand">
+                        <img src="~/images/logo.png"
+                             alt="Waste Connect Logo"
+                             class="topbar-logo" />
+
+                        <h1>
+                            <span class="brand-blue">Waste</span><span class="brand-green">Connect</span>
+                        </h1>
+                    </div>
+
+                    <nav class="topbar-nav">
+
+                        <a asp-controller="Home" asp-action="Index">
+                            Home
+                        </a>
+
+                        <a asp-controller="Home" asp-action="About">
+                            About Us
+                        </a>
+
+                        <a asp-controller="Home" asp-action="Contact">
+                            Contact Us
+                        </a>
+
+                    </nav>
+
+                </div>
+
+                <div class="topbar-right">
+
+                    <div class="notification-bell">
+                        🔔
+                    </div>
+
+                    <a class="user-profile"
+                       href="@(
+                       User.IsInRole("Company")
+                           ? Url.Action("CompanyProfile", "Company")
+                           : User.IsInRole("Admin")
+                               ? Url.Action("Profile", "Admin")
+                               : Url.Action("Profile", "User")
+                                                )">
+
+                        <div class="user-badge">
+                            @fullName.Substring(0, 1).ToUpper()
+                        </div>
+
+                        <div>
+                            <strong>@fullName</strong>
+                            <small>@roleName</small>
+                        </div>
+
+                    </a>
+
+                </div>
+
+            </header>
+
+            <section class="dashboard-body">
+                @RenderBody()
+            </section>
+
+            <footer class="portal-footer">
+
+                <div class="portal-footer-grid">
+
+                    <div class="footer-brand">
+
+                        <img src="~/images/logo.png" alt="WasteConnect" />
+
+                        <h3>
+                            <span class="brand-blue">Waste</span><span class="brand-green">Connect</span>
+                        </h3>
+
+                        <p>
+                            Connecting communities, municipalities and waste management
+                            companies to create cleaner and healthier environments.
+                        </p>
+
+                    </div>
+
+                    <div>
+
+                        <h4>Quick Links</h4>
+
+                        <ul>
+                            <li>
+                                <a asp-controller="Home" asp-action="Index">Home</a>
+                            </li>
+
+                            <li>
+                                <a asp-controller="User" asp-action="ReportDumping">Report Dumping</a>
+                            </li>
+
+                            <li>
+                                <a asp-controller="DisposalSite" asp-action="FindDisposalSite">Disposal Sites</a>
+                            </li>
+
+                            <li>
+                                <a href="#">Community Guidelines</a>
+                            </li>
+                        </ul>
+
+                    </div>
+
+                    <div>
+
+                        <h4>Support</h4>
+
+                        <ul>
+                            <li>
+                                <a asp-controller="Home" asp-action="About">About Us</a>
+                            </li>
+
+                            <li>
+                                <a asp-controller="Home" asp-action="Contact">Contact Us</a>
+                            </li>
+
+                            <li>
+                                <a href="#">FAQ</a>
+                            </li>
+
+                            <li>
+                                <a href="#">Privacy Policy</a>
+                            </li>
+                        </ul>
+
+                    </div>
+
+                    <div>
+
+                        <h4>Contact Information</h4>
+
+                        <ul class="footer-contact">
+                            <li>📞 +27 XX XXX XXXX</li>
+                            <li>✉ support@wasteconnect.co.za</li>
+                            <li>📍 Pietermaritzburg, KwaZulu-Natal</li>
+                        </ul>
+
+                    </div>
+
+                </div>
+
+                <div class="footer-bottom">
+                    © @DateTime.Now.Year WasteConnect. All rights reserved.
+                </div>
+
+            </footer>
+
+        </main>
+
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            document.getElementById("sidebar").classList.toggle("show-sidebar");
+            document.getElementById("sidebarOverlay").classList.toggle("show-overlay");
+        }
+                function toggleAnalyticsDropdown() {
+            document
+                .getElementById("analyticsDropdown")
+                .classList
+                .toggle("show-dropdown");
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

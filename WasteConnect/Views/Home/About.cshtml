@@ -1,0 +1,228 @@
+﻿@{
+    ViewData["Title"] = "About WasteConnect";
+}
+
+<div class="about-page">
+
+    <section class="about-hero">
+        <div class="about-slider">
+            <div class="about-slide active" style="background-image:url('/images/connect.jpeg')"></div>
+            <div class="about-slide" style="background-image:url('/images/companies.png')"></div>
+            <div class="about-slide" style="background-image:url('/images/background.jpg')"></div>
+        </div>
+
+        <div class="about-hero-overlay">
+            <span class="about-pill">Municipal Waste Management Platform</span>
+
+            <h1>About WasteConnect</h1>
+
+            <p>
+                WasteConnect connects communities, municipalities and waste management
+                companies through one smart digital platform for cleaner, safer and healthier environments.
+            </p>
+
+            <div class="about-hero-buttons">
+                <a asp-controller="Account" asp-action="Register" class="primary-btn">Get Started</a>
+                <a asp-controller="Home" asp-action="Contact" class="secondary-btn">Contact Us</a>
+            </div>
+        </div>
+
+        <div class="about-floating-stats">
+            <div>
+                <strong>3</strong>
+                <span>Main User Roles</span>
+            </div>
+
+            <div>
+                <strong>24/7</strong>
+                <span>Report Access</span>
+            </div>
+
+            <div>
+                <strong>Smart</strong>
+                <span>Case Tracking</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="about-section about-intro">
+        <div>
+            <span class="section-label">The Problem</span>
+            <h2>Illegal dumping affects everyone</h2>
+            <p>
+                Illegal dumping damages the environment, creates health risks,
+                affects public safety and places pressure on municipal service delivery.
+                WasteConnect gives communities a simple way to report waste issues
+                while helping municipalities respond faster and more transparently.
+            </p>
+        </div>
+
+        <img src="/images/Dump.jpeg" alt="Illegal dumping problem" />
+    </section>
+
+    <section class="about-section reverse">
+        <img src="/images/waste.jpeg" alt="WasteConnect system" />
+
+        <div>
+            <span class="section-label">What We Do</span>
+            <h2>A smarter way to manage waste reports</h2>
+            <p>
+                WasteConnect allows residents to report illegal dumping with photos,
+                location details and map coordinates. Municipal administrators can review
+                reports, group duplicate cases, assign cleanup companies and monitor
+                progress from one central system.
+            </p>
+        </div>
+    </section>
+
+    <section class="about-users">
+        <span class="section-label">Who Uses WasteConnect</span>
+        <h2>Built for the whole waste management process</h2>
+
+        <div class="about-role-grid">
+
+            <div class="about-role-card">
+                <div class="role-icon">👥</div>
+                <h3>Community Members</h3>
+                <p>Report illegal dumping, upload evidence and track cleanup progress.</p>
+            </div>
+
+            <div class="about-role-card">
+                <div class="role-icon">🏛</div>
+                <h3>Municipal Admins</h3>
+                <p>Manage reports, approve companies, assign jobs and view analytics.</p>
+            </div>
+
+            <div class="about-role-card">
+                <div class="role-icon">🚛</div>
+                <h3>Waste Companies</h3>
+                <p>Receive cleanup jobs, navigate to sites and submit before-and-after proof.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="about-process">
+        <span class="section-label">How It Works</span>
+        <h2>From report to cleanup in one connected process</h2>
+
+        <div class="process-timeline">
+
+            <div class="process-step">
+                <span>01</span>
+                <h3>Resident Reports</h3>
+                <p>A community member uploads a photo and selects the dumping location.</p>
+            </div>
+
+            <div class="process-step">
+                <span>02</span>
+                <h3>Admin Reviews</h3>
+                <p>The municipality reviews the case, duplicate reports and priority level.</p>
+            </div>
+
+            <div class="process-step">
+                <span>03</span>
+                <h3>Company Cleans</h3>
+                <p>An approved cleanup company is assigned and navigates to the site.</p>
+            </div>
+
+            <div class="process-step">
+                <span>04</span>
+                <h3>Proof Submitted</h3>
+                <p>Before and after evidence is submitted so cleanup can be verified.</p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="about-features">
+        <span class="section-label">Key Features</span>
+        <h2>Designed like a real municipal operations platform</h2>
+
+        <div class="feature-grid">
+            <div>📍 Azure Maps location tracking</div>
+            <div>🗑 Illegal dumping reports</div>
+            <div>🔁 Duplicate report detection</div>
+            <div>🏢 Company assignment</div>
+            <div>📸 Before and after cleanup proof</div>
+            <div>📊 Admin analytics dashboard</div>
+            <div>♻ Disposal site locator</div>
+            <div>🔔 Status updates and transparency</div>
+        </div>
+    </section>
+
+    <section class="impact-section">
+        <div>
+            <span class="section-label">Community Impact</span>
+            <h2>Cleaner communities, faster response</h2>
+            <p>
+                WasteConnect helps reduce duplicate reports, improves cleanup response,
+                supports local job opportunities and gives residents a direct way to report
+                environmental issues.
+            </p>
+        </div>
+
+        <div class="impact-stats">
+            <div>
+                <strong>Faster</strong>
+                <span>report handling</span>
+            </div>
+
+            <div>
+                <strong>Cleaner</strong>
+                <span>public spaces</span>
+            </div>
+
+            <div>
+                <strong>Smarter</strong>
+                <span>municipal decisions</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="vision-section">
+
+        <div class="vision-card">
+            <h2>Our Mission</h2>
+            <p>
+                Our mission is to make waste reporting faster, cleaner and more transparent
+                for communities and municipalities.
+            </p>
+        </div>
+
+        <div class="vision-card">
+            <h2>Future Vision</h2>
+            <p>
+                WasteConnect aims to support ward-based analytics, councillor involvement,
+                AI-powered hotspot detection, recycling awareness and improved waste disposal tracking.
+            </p>
+        </div>
+
+    </section>
+
+    <section class="about-cta">
+        <h2>Working together for a cleaner Pietermaritzburg</h2>
+        <p>
+            WasteConnect brings residents, municipalities and cleanup companies into one
+            transparent system that supports faster reporting, better coordination and cleaner spaces.
+        </p>
+
+        <a asp-controller="Account" asp-action="Register">
+            Join WasteConnect
+        </a>
+    </section>
+
+</div>
+
+@section Scripts {
+    <script>
+        let currentAboutSlide = 0;
+        const aboutSlides = document.querySelectorAll(".about-slide");
+
+        setInterval(() => {
+            aboutSlides[currentAboutSlide].classList.remove("active");
+            currentAboutSlide = (currentAboutSlide + 1) % aboutSlides.length;
+            aboutSlides[currentAboutSlide].classList.add("active");
+        }, 5000);
+    </script>
+}

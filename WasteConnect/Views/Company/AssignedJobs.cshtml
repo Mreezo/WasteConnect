@@ -1,0 +1,402 @@
+﻿@model List<WasteConnect.Models.DumpingReport>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Assigned Jobs";
+}
+
+<link rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
+
+<div class="assigned-jobs-page">
+
+    @if (TempData["JobSuccess"] != null)
+    {
+        <div id="jobToast" class="success-toast">
+            <span>✓</span>
+            <p>@TempData["JobSuccess"]</p>
+        </div>
+    }
+
+    <div class="portal-page-header">
+        <div>
+            <h2>Assigned Cleanup Jobs</h2>
+            <p>Track assigned cleanup locations, navigate to the site, and update cleanup progress.</p>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-reports">
+            <h3>No Assigned Jobs</h3>
+            <p>No cleanup jobs have been assigned to your company yet.</p>
+        </div>
+    }
+    else
+    {
+        <div id="companyJobTopArea" class="company-job-top-area">
+
+            <div class="assigned-map-panel assigned-map-top">
+
+                <div class="assigned-map-header">
+                    <h3>Cleanup Location Map</h3>
+                    <p id="mapInstruction">
+                        Click Track on a job below to show the cleanup location.
+                    </p>
+                </div>
+
+                <div id="assignedJobMap"></div>
+
+            </div>
+
+            <div id="selectedJobDetails" class="selected-job-details">
+
+                <button type="button"
+                        class="close-selected-job"
+                        onclick="closeSelectedJobDetails()">
+                    ×
+                </button>
+
+                <h3>Selected Job Details</h3>
+
+                <img id="selectedJobImage"
+                     src=""
+                     alt="Selected job image"
+                     class="selected-job-image" />
+
+                <div class="selected-job-info">
+                    <div>
+                        <span>Location</span>
+                        <strong id="selectedJobLocation">Not selected</strong>
+                    </div>
+
+                    <div>
+                        <span>Status</span>
+                        <strong id="selectedJobStatus">Not selected</strong>
+                    </div>
+
+                    <div>
+                        <span>Assigned Date</span>
+                        <strong id="selectedJobAssigned">Not available</strong>
+                    </div>
+
+                    <div>
+                        <span>Start Date</span>
+                        <strong id="selectedJobStart">Not set</strong>
+                    </div>
+
+                    <div>
+                        <span>Due Date</span>
+                        <strong id="selectedJobDue">Not set</strong>
+                    </div>
+
+                    <div>
+                        <span>Time Remaining</span>
+                        <strong id="selectedJobRemaining">Not available</strong>
+                    </div>
+                </div>
+
+                <div class="selected-job-instructions">
+                    <h4>Cleanup Instructions</h4>
+                    <p id="selectedJobInstructions">
+                        Click a job photo to view instructions.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="assigned-list-panel">
+
+            <div class="portal-panel-header">
+                <h3>Assigned Job List</h3>
+                <p>All active cleanup jobs assigned to your company.</p>
+            </div>
+
+            <div class="assigned-jobs-table-wrapper">
+                <table class="assigned-jobs-table">
+                    <thead>
+                        <tr>
+                            <th>Photo</th>
+                            <th>Location</th>
+                            <th>Reporter</th>
+                            <th>Phone</th>
+                            <th>Status</th>
+                            <th>Assigned</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var job in Model)
+                        {
+                            var imageUrl = string.IsNullOrEmpty(job.ImageUrl) ? "" : job.ImageUrl;
+                            var startDateText = job.CleanupStartDate?.ToString("dd MMM yyyy") ?? "Not set";
+                            var dueDateText = job.CleanupDueDate?.ToString("dd MMM yyyy") ?? "Not set";
+                            var assignedDateText = job.AssignedAt?.ToString("dd MMM yyyy HH:mm") ?? "Not available";
+                            var instructions = string.IsNullOrWhiteSpace(job.CleanupInstructions)
+                            ? "No special cleanup instructions were provided by admin."
+                            : job.CleanupInstructions;
+
+                            <tr>
+                                <td>
+                                    <div class="job-table-image clickable-job-image"
+                                         onclick="showSelectedJobDetails(this)"
+                                         data-image="@imageUrl"
+                                         data-location="@job.DumpingLocation"
+                                         data-city="@job.City"
+                                         data-status="@job.Status"
+                                         data-assigned="@assignedDateText"
+                                         data-start="@startDateText"
+                                         data-due="@dueDateText"
+                                         data-due-raw="@(job.CleanupDueDate?.ToString("yyyy-MM-dd") ?? "")"
+                                         data-instructions="@instructions">
+
+                                        @if (!string.IsNullOrEmpty(job.ImageUrl))
+                                        {
+                                            <img src="@job.ImageUrl" alt="Illegal dumping image" />
+                                        }
+                                        else
+                                        {
+                                            <span>No Image</span>
+                                        }
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <strong>@job.DumpingLocation</strong>
+                                    <small>@job.City</small>
+                                </td>
+
+                                <td>@job.FullName</td>
+
+                                <td>@job.PhoneNumber</td>
+
+                                <td>
+                                    <span class="table-status @job.Status.ToLower().Replace(" ", "")">
+                                        @job.Status
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @assignedDateText
+                                </td>
+
+                                <td>
+                                    <div class="job-table-actions">
+
+                                        <button type="button"
+                                                class="track-job-btn"
+                                                onclick="trackJob('@job.DumpingLocation', '@job.City', '@job.ImageUrl')">
+                                            Track
+                                        </button>
+
+                                        <a class="navigate-job-btn"
+                                           target="_blank"
+                                           href="https://www.google.com/maps/search/?api=1&query=@($"{job.DumpingLocation}, {job.City}")">
+                                            Navigate
+                                        </a>
+
+                                        @if (job.Status == "Assigned")
+                                        {
+                                            <form asp-controller="Company"
+                                                  asp-action="UpdateJobStatus"
+                                                  method="post">
+                                                @Html.AntiForgeryToken()
+
+                                                <input type="hidden" name="reportId" value="@job.Id" />
+                                                <input type="hidden" name="reportUserId" value="@job.UserId" />
+                                                <input type="hidden" name="status" value="In Progress" />
+
+                                                <button type="submit" class="progress-job-btn">
+                                                    Start
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (job.Status == "In Progress")
+                                        {
+                                            <a asp-controller="Company"
+                                               asp-action="CompleteJob"
+                                               asp-route-id="@job.Id"
+                                               asp-route-userId="@job.UserId"
+                                               class="cleaned-job-btn">
+                                                Complete
+                                            </a>
+                                        }
+
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+    }
+
+</div>
+
+@section Scripts {
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
+    <script>
+        const azureKey = '@ViewBag.AzureMapsKey';
+
+        let map;
+        let currentMarker;
+
+        function initAssignedMap() {
+            map = new atlas.Map('assignedJobMap', {
+                center: [30.3920, -29.6006],
+                zoom: 11,
+                authOptions: {
+                    authType: 'subscriptionKey',
+                    subscriptionKey: azureKey
+                }
+            });
+        }
+
+        async function trackJob(location, city, imageUrl) {
+            const fullAddress = `${location}, ${city}`;
+            const instruction = document.getElementById("mapInstruction");
+
+            instruction.innerText = "Finding cleanup location...";
+
+            const searchUrl =
+                `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureKey}&query=${encodeURIComponent(fullAddress)}`;
+
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+
+            if (!data.results || data.results.length === 0) {
+                instruction.innerText = "Could not locate this address on the map.";
+                return;
+            }
+
+            const position = data.results[0].position;
+            const lat = position.lat;
+            const lon = position.lon;
+
+            map.setCamera({
+                center: [lon, lat],
+                zoom: 15
+            });
+
+            if (currentMarker) {
+                map.markers.remove(currentMarker);
+            }
+
+            currentMarker = new atlas.HtmlMarker({
+                color: 'Green',
+                text: 'W',
+                position: [lon, lat]
+            });
+
+            map.markers.add(currentMarker);
+
+            instruction.innerText = fullAddress;
+
+            window.scrollTo({
+                top: document.querySelector(".assigned-map-top").offsetTop - 20,
+                behavior: "smooth"
+            });
+        }
+
+        function showSelectedJobDetails(element) {
+            const topArea = document.getElementById("companyJobTopArea");
+            const panel = document.getElementById("selectedJobDetails");
+
+            const image = element.dataset.image;
+            const location = element.dataset.location;
+            const city = element.dataset.city;
+            const status = element.dataset.status;
+            const assigned = element.dataset.assigned;
+            const start = element.dataset.start;
+            const due = element.dataset.due;
+            const dueRaw = element.dataset.dueRaw;
+            const instructions = element.dataset.instructions;
+
+            topArea.classList.add("show-job-details");
+            panel.classList.add("show");
+
+            const selectedImage = document.getElementById("selectedJobImage");
+
+            if (image && image.trim() !== "") {
+                selectedImage.src = image;
+                selectedImage.style.display = "block";
+            } else {
+                selectedImage.style.display = "none";
+            }
+
+            document.getElementById("selectedJobLocation").innerText =
+                `${location}, ${city}`;
+
+            document.getElementById("selectedJobStatus").innerText = status;
+            document.getElementById("selectedJobAssigned").innerText = assigned;
+            document.getElementById("selectedJobStart").innerText = start;
+            document.getElementById("selectedJobDue").innerText = due;
+            document.getElementById("selectedJobInstructions").innerText = instructions;
+            document.getElementById("selectedJobRemaining").innerText =
+                calculateRemainingTime(dueRaw);
+
+            setTimeout(() => {
+                map.resize();
+            }, 300);
+        }
+
+        function closeSelectedJobDetails() {
+            document.getElementById("companyJobTopArea")
+                .classList.remove("show-job-details");
+
+            document.getElementById("selectedJobDetails")
+                .classList.remove("show");
+
+            setTimeout(() => {
+                map.resize();
+            }, 300);
+        }
+
+        function calculateRemainingTime(dueRaw) {
+            if (!dueRaw) {
+                return "No due date set";
+            }
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const dueDate = new Date(dueRaw);
+            dueDate.setHours(0, 0, 0, 0);
+
+            const difference = dueDate - today;
+            const days = Math.ceil(difference / (1000 * 60 * 60 * 24));
+
+            if (days > 1) {
+                return `${days} days remaining`;
+            }
+
+            if (days === 1) {
+                return "1 day remaining";
+            }
+
+            if (days === 0) {
+                return "Due today";
+            }
+
+            return `Overdue by ${Math.abs(days)} day(s)`;
+        }
+
+        document.addEventListener("DOMContentLoaded", initAssignedMap);
+
+        const jobToast = document.getElementById("jobToast");
+
+        if (jobToast) {
+            setTimeout(() => {
+                jobToast.remove();
+            }, 5000);
+        }
+    </script>
+}

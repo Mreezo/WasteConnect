@@ -1,0 +1,203 @@
+﻿@model List<WasteConnect.Models.DumpingReport>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Reports Management";
+}
+
+<div class="page-hero reports-hero">
+
+    <div class="page-hero-overlay">
+
+        <div class="page-hero-content">
+
+            <span class="hero-icon">📍</span>
+
+            <div>
+                <h1>Reports Management</h1>
+                <p>
+                    Review illegal dumping cases, monitor community reports and manage cleanup operations.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="table-toolbar">
+
+    <form asp-action="Reports"
+          method="get"
+          class="search-form">
+
+        <input type="text"
+               name="search"
+               value="@Context.Request.Query["search"]"
+               placeholder="Search by location, reporter or city..." />
+
+        <select name="status">
+
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Assigned">Assigned</option>
+            <option value="In Progress">In Progress</option>
+            <option value="Cleaned">Cleaned</option>
+
+        </select>
+
+        <button type="submit">
+            Search
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(Context.Request.Query["search"]) ||
+                !string.IsNullOrWhiteSpace(Context.Request.Query["status"]))
+        {
+            <a asp-action="Reports"
+               class="clear-search-btn">
+                Clear
+            </a>
+        }
+
+    </form>
+
+    <div class="report-count">
+        @Model.Count Active Cases
+    </div>
+
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-reports">
+
+        <h3>No Reports Found</h3>
+
+        <p>No reports match your search.</p>
+
+    </div>
+}
+else
+{
+    <div class="admin-report-table-wrapper">
+
+        <table class="admin-report-table">
+
+            <thead>
+
+                <tr>
+
+                    <th>Case</th>
+                    <th>Location</th>
+                    <th>City</th>
+                    <th>Status</th>
+                    <th>Community Reports</th>
+                    <th>Priority</th>
+                    <th>First Reported</th>
+                    <th>Last Reported</th>
+                    <th>Action</th>
+
+                </tr>
+
+            </thead>
+
+            <tbody>
+
+                @foreach (var report in Model)
+                {
+                    <tr>
+
+                        <td>
+                            <strong>@report.FullName</strong>
+
+                            <small class="stacked-note">
+                                Main case reporter
+                            </small>
+                        </td>
+
+                        <td>
+
+                            <strong>@report.DumpingLocation</strong>
+
+                            @if (report.DuplicateCount > 1)
+                            {
+                                <small class="stacked-note">
+                                    Nearby reports grouped together
+                                </small>
+                            }
+                            else
+                            {
+                                <small class="stacked-note">
+                                    Single report
+                                </small>
+                            }
+
+                        </td>
+
+                        <td>@report.City</td>
+
+                        <td>
+
+                            <span class="table-status @report.Status.ToLower().Replace(" ", "")">
+
+                                @report.Status
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="community-count">
+
+                                @report.DuplicateCount
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span class="priority-badge @report.Priority.ToLower()">
+
+                                @report.Priority
+
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            @report.CreatedAt.ToString("dd MMM yyyy")
+
+                        </td>
+
+                        <td>
+
+                            @report.LastReportedAt.ToString("dd MMM yyyy HH:mm")
+
+                        </td>
+
+                        <td>
+
+                            <a asp-action="ReportDetails"
+                               asp-route-id="@report.Id"
+                               asp-route-userId="@report.UserId"
+                               class="view-report-btn">
+
+                                View Case
+
+                            </a>
+
+                        </td>
+
+                    </tr>
+                }
+
+            </tbody>
+
+        </table>
+
+    </div>
+}

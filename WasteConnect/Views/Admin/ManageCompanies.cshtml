@@ -1,0 +1,114 @@
+﻿@model List<WasteConnect.Models.Company>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Manage Companies";
+}
+
+<div class="page-hero manage-companies-hero">
+
+    <div class="page-hero-overlay">
+
+        <div class="page-hero-content">
+
+            <span class="hero-icon">🏢</span>
+
+            <div>
+                <h1>Manage Companies</h1>
+                <p>
+                    Review company applications submitted by waste service providers.
+                </p>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<div class="table-toolbar">
+
+    <form asp-action="ManageCompanies"
+          method="get"
+          class="search-form">
+
+        <input type="text"
+               name="search"
+               value="@Context.Request.Query["search"]"
+               placeholder="Search by company name, email or service area..." />
+
+        <button type="submit">
+            Search
+        </button>
+
+        @if (!string.IsNullOrWhiteSpace(Context.Request.Query["search"]))
+        {
+            <a asp-action="ManageCompanies"
+               class="clear-search-btn">
+                Clear
+            </a>
+        }
+
+    </form>
+
+    <div class="report-count">
+        @Model.Count Applications
+    </div>
+
+</div>
+
+@if (!Model.Any())
+{
+    <div class="empty-reports">
+        <h3>No Company Applications</h3>
+        <p>No companies match your search or no applications have been submitted yet.</p>
+    </div>
+}
+else
+{
+    <div class="admin-report-table-wrapper">
+        <table class="admin-report-table">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Contact</th>
+                    <th>Email</th>
+                    <th>Service Area</th>
+                    <th>Status</th>
+                    <th>Submitted</th>
+                    <th>View</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                @foreach (var company in Model)
+                {
+                    <tr>
+                        <td>@company.CompanyName</td>
+                        <td>@company.ContactPerson</td>
+                        <td>@company.Email</td>
+                        <td>@company.ServiceArea</td>
+
+                        <td>
+                            <span class="table-status @company.Status.ToLower()">
+                                @company.Status
+                            </span>
+                        </td>
+
+                        <td>@company.CreatedAt.ToString("dd MMM yyyy")</td>
+
+                        <td>
+                            <a asp-controller="Admin"
+                               asp-action="CompanyDetails"
+                               asp-route-id="@company.Id"
+                               asp-route-userId="@company.UserId"
+                               class="view-report-btn">
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

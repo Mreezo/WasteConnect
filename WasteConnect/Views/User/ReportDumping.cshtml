@@ -1,0 +1,492 @@
+﻿@model WasteConnect.ViewModels.DumpingReportViewModel
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Report Illegal Dumping";
+}
+
+<link rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
+
+@if (TempData["Success"] != null)
+{
+    <div id="reportSuccessPopup" class="report-success-popup">
+        <div class="report-success-box">
+            <span>✓</span>
+            <h3>Report Submitted</h3>
+            <p>@TempData["Success"]</p>
+
+            <button type="button" onclick="closeReportSuccessPopup()">
+                OK
+            </button>
+        </div>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="error-alert">
+        @TempData["Error"]
+    </div>
+}
+
+<div class="report-form-map-layout">
+
+    <div class="report-form-panel">
+
+        <form id="reportForm"
+              asp-controller="User"
+              asp-action="SubmitReport"
+              method="post"
+              enctype="multipart/form-data"
+              class="report-form">
+
+            @Html.AntiForgeryToken()
+
+            <input asp-for="DumpLatitude" type="hidden" id="DumpLatitude" />
+            <input asp-for="DumpLongitude" type="hidden" id="DumpLongitude" />
+
+            <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+            <div class="form-grid">
+
+                <div class="form-box">
+                    <label asp-for="FullName"></label>
+                    <input asp-for="FullName" readonly />
+                    <span asp-validation-for="FullName" class="text-danger"></span>
+                </div>
+
+                <div class="form-box">
+                    <input asp-for="PhoneNumber"
+                           id="reportPhoneNumber"
+                           readonly />
+                    <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <div class="form-box full">
+                    <label asp-for="DumpingLocation"></label>
+                    <input asp-for="DumpingLocation"
+                           placeholder="Example: 25 Church Street, Scottsville" />
+                    <span asp-validation-for="DumpingLocation" class="text-danger"></span>
+                </div>
+
+                <div class="form-box">
+                    <label>City</label>
+                    <input asp-for="City" value="Pietermaritzburg" readonly />
+                </div>
+
+            </div>
+
+            <div class="upload-section">
+
+                <div class="upload-card">
+                    <h3>Upload Existing Photo</h3>
+                    <p>Select a photo from your phone or computer.</p>
+
+                    <input asp-for="ImageFile" type="file" accept="image/*" />
+                </div>
+
+                <div class="upload-card">
+                    <h3>Take Photo Now</h3>
+                    <p>Use your device camera to capture the dumping area.</p>
+
+                    <video id="camera" autoplay></video>
+                    <canvas id="snapshot"></canvas>
+
+                    <input asp-for="CapturedImageData"
+                           type="hidden"
+                           id="CapturedImageData" />
+
+                    <div class="camera-actions">
+                        <button type="button"
+                                onclick="startCamera()"
+                                class="outline-btn">
+                            Open Camera
+                        </button>
+
+                        <button type="button"
+                                onclick="capturePhoto()"
+                                class="outline-btn green">
+                            Capture Photo
+                        </button>
+                    </div>
+
+                    <img id="preview" class="photo-preview" />
+                </div>
+
+            </div>
+
+            <div class="map-selected-message">
+                Latitude: <span id="debugLat">0</span><br />
+                Longitude: <span id="debugLng">0</span>
+            </div>
+
+            <button type="button"
+                    id="openReportOtpBtn"
+                    class="submit-report-btn">
+                Submit Report
+            </button>
+
+        </form>
+
+    </div>
+
+    <div class="report-map-card">
+        <h3>Select Dumping Location</h3>
+        <p>Click on the map to mark the exact illegal dumping spot.</p>
+
+        <div id="reportMap"></div>
+
+        <div id="mapSelectedMessage" class="map-selected-message">
+            No location selected yet.
+        </div>
+    </div>
+
+</div>
+
+<div id="reportOtpModal" class="otp-overlay">
+    <div class="otp-box">
+
+        <img src="~/images/logo.png" class="otp-logo" />
+
+        <h2>Verify Your Phone Number</h2>
+
+        <p>
+            Enter the 6-digit OTP sent to your registered phone number.
+        </p>
+
+        <div class="code-inputs report-code-inputs">
+            <input maxlength="1" class="report-code-box" />
+            <input maxlength="1" class="report-code-box" />
+            <input maxlength="1" class="report-code-box" />
+            <input maxlength="1" class="report-code-box" />
+            <input maxlength="1" class="report-code-box" />
+            <input maxlength="1" class="report-code-box" />
+        </div>
+
+        <button type="button"
+                id="verifyReportOtpBtn"
+                class="otp-submit-btn">
+            Verify OTP & Submit Report
+        </button>
+
+        <div class="otp-footer">
+            <span id="reportOtpCountdown">OTP expires in 5:00</span>
+            <a href="#" id="resendReportOtp">Resend OTP</a>
+        </div>
+
+    </div>
+</div>
+@section Scripts {
+
+        function closeReportSuccessPopup() {
+        document.getElementById("reportSuccessPopup").remove();
+    }
+    <partial name="_ValidationScriptsPartial" />
+
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
+    <script>
+        let cameraStream;
+
+        async function startCamera() {
+            const video = document.getElementById("camera");
+            video.style.display = "block";
+
+
+            cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: true
+            });
+
+            video.srcObject = cameraStream;
+        }
+
+        function capturePhoto() {
+            const video = document.getElementById("camera");
+            const canvas = document.getElementById("snapshot");
+            const preview = document.getElementById("preview");
+            const hiddenInput = document.getElementById("CapturedImageData");
+
+            const context = canvas.getContext("2d");
+
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            const imageData = canvas.toDataURL("image/png");
+
+            hiddenInput.value = imageData;
+            preview.src = imageData;
+            preview.style.display = "block";
+
+            if (cameraStream) {
+                cameraStream.getTracks().forEach(track => track.stop());
+            }
+
+            video.style.display = "none";
+        }
+               const azureKey = '@ViewBag.AzureMapsKey';
+
+        let reportMap;
+        let dumpMarker;
+        let searchTimer;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            reportMap = new atlas.Map("reportMap", {
+                center: [30.3920, -29.6006],
+                zoom: 12,
+                authOptions: {
+                    authType: "subscriptionKey",
+                    subscriptionKey: azureKey
+                }
+            });
+
+            reportMap.events.add("ready", function () {
+                reportMap.events.add("click", function (e) {
+                    const longitude = e.position[0];
+                    const latitude = e.position[1];
+
+                    setDumpLocation(latitude, longitude, "Dumping location selected from map.");
+                });
+            });
+
+            const locationInput = document.getElementById("DumpingLocation");
+
+            locationInput.addEventListener("input", function () {
+                clearTimeout(searchTimer);
+
+                searchTimer = setTimeout(() => {
+                    searchAddressOnMap(locationInput.value);
+                }, 1000);
+            });
+        });
+
+        async function searchAddressOnMap(addressText) {
+            if (!addressText || addressText.trim().length < 4) {
+                return;
+            }
+
+            const fullAddress = `${addressText}, Pietermaritzburg, South Africa`;
+
+            document.getElementById("mapSelectedMessage").innerText =
+                "Searching location on map...";
+
+            const searchUrl =
+                `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureKey}&query=${encodeURIComponent(fullAddress)}`;
+
+            const response = await fetch(searchUrl);
+            const data = await response.json();
+
+            if (!data.results || data.results.length === 0) {
+                document.getElementById("mapSelectedMessage").innerText =
+                    "Location not found. Try entering a clearer street name or nearby landmark.";
+                return;
+            }
+
+            const result = data.results[0];
+            const latitude = result.position.lat;
+            const longitude = result.position.lon;
+
+            setDumpLocation(latitude, longitude, result.address.freeformAddress);
+        }
+
+        function setDumpLocation(latitude, longitude, message) {
+            const latInput = document.getElementById("DumpLatitude");
+            const lngInput = document.getElementById("DumpLongitude");
+
+            const cleanLat = Number(latitude).toFixed(7).replace(",", ".");
+            const cleanLng = Number(longitude).toFixed(7).replace(",", ".");
+
+            latInput.value = cleanLat;
+            lngInput.value = cleanLng;
+
+            const debugLat = document.getElementById("debugLat");
+            const debugLng = document.getElementById("debugLng");
+
+            if (debugLat) {
+                debugLat.innerText = cleanLat;
+            }
+
+            if (debugLng) {
+                debugLng.innerText = cleanLng;
+            }
+
+            console.log("Latitude saved:", latInput.value);
+            console.log("Longitude saved:", lngInput.value);
+
+            reportMap.setCamera({
+                center: [Number(cleanLng), Number(cleanLat)],
+                zoom: 16
+            });
+
+            if (dumpMarker) {
+                reportMap.markers.remove(dumpMarker);
+            }
+
+            dumpMarker = new atlas.HtmlMarker({
+                color: "Green",
+                text: "D",
+                position: [Number(cleanLng), Number(cleanLat)]
+            });
+
+            reportMap.markers.add(dumpMarker);
+
+            document.getElementById("mapSelectedMessage").innerText =
+                `${message} Coordinates: ${cleanLat}, ${cleanLng}`;
+
+        }
+
+        const reportForm = document.getElementById("reportForm");
+        const openReportOtpBtn = document.getElementById("openReportOtpBtn");
+        const reportOtpModal = document.getElementById("reportOtpModal");
+        const verifyReportOtpBtn = document.getElementById("verifyReportOtpBtn");
+        const reportCodeBoxes = document.querySelectorAll(".report-code-box");
+
+        let reportOtpTimer;
+        let reportOtpVerified = false;
+
+        reportCodeBoxes.forEach((box, index) => {
+            box.addEventListener("input", function () {
+                this.value = this.value.replace(/[^0-9]/g, "");
+
+                if (this.value.length === 1 && index < reportCodeBoxes.length - 1) {
+                    reportCodeBoxes[index + 1].focus();
+                }
+            });
+
+            box.addEventListener("keydown", function (e) {
+                if (e.key === "Backspace" && this.value === "" && index > 0) {
+                    reportCodeBoxes[index - 1].focus();
+                }
+            });
+        });
+
+        document.querySelector(".report-code-inputs").addEventListener("paste", function (e) {
+            e.preventDefault();
+
+            const paste = (e.clipboardData || window.clipboardData)
+                .getData("text")
+                .replace(/\D/g, "")
+                .substring(0, 6);
+
+            [...paste].forEach((digit, i) => {
+                if (reportCodeBoxes[i]) {
+                    reportCodeBoxes[i].value = digit;
+                }
+            });
+
+            if (paste.length === 6) {
+                reportCodeBoxes[5].focus();
+            }
+        });
+
+        openReportOtpBtn.addEventListener("click", async function () {
+            if (reportOtpVerified) {
+                reportForm.submit();
+                return;
+            }
+
+            const phoneNumber = document.getElementById("reportPhoneNumber").value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            const formData = new FormData();
+            formData.append("phoneNumber", phoneNumber);
+            formData.append("__RequestVerificationToken", token);
+
+            openReportOtpBtn.disabled = true;
+            openReportOtpBtn.innerText = "Sending OTP...";
+
+            const response = await fetch("/User/SendReportOtp", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+
+            openReportOtpBtn.disabled = false;
+            openReportOtpBtn.innerText = "Submit Report";
+
+            if (result.success) {
+                clearReportOtpBoxes();
+                reportOtpModal.classList.add("show");
+                reportCodeBoxes[0].focus();
+                startReportOtpCountdown();
+            } else {
+                alert(result.message);
+            }
+        });
+
+        verifyReportOtpBtn.addEventListener("click", async function () {
+            const phoneNumber = document.getElementById("reportPhoneNumber").value;
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+            let otp = "";
+            reportCodeBoxes.forEach(box => {
+                otp += box.value;
+            });
+
+            if (otp.length !== 6) {
+                alert("Please enter the full 6-digit OTP.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("phoneNumber", phoneNumber);
+            formData.append("otp", otp);
+            formData.append("__RequestVerificationToken", token);
+
+            verifyReportOtpBtn.disabled = true;
+            verifyReportOtpBtn.innerText = "Verifying...";
+
+            const response = await fetch("/User/VerifyReportOtp", {
+                method: "POST",
+                body: formData
+            });
+
+            const result = await response.json();
+
+            verifyReportOtpBtn.disabled = false;
+            verifyReportOtpBtn.innerText = "Verify OTP & Submit Report";
+
+            if (result.success) {
+                reportOtpVerified = true;
+                reportOtpModal.classList.remove("show");
+                reportForm.submit();
+            } else {
+                alert(result.message);
+            }
+        });
+
+        document.getElementById("resendReportOtp").addEventListener("click", async function (e) {
+            e.preventDefault();
+            openReportOtpBtn.click();
+        });
+
+        function clearReportOtpBoxes() {
+            reportCodeBoxes.forEach(box => box.value = "");
+        }
+
+        function startReportOtpCountdown() {
+            clearInterval(reportOtpTimer);
+
+            let seconds = 300;
+            const countdown = document.getElementById("reportOtpCountdown");
+
+            reportOtpTimer = setInterval(() => {
+                let min = Math.floor(seconds / 60);
+                let sec = seconds % 60;
+
+                countdown.innerText =
+                    `OTP expires in ${min}:${sec.toString().padStart(2, "0")}`;
+
+                seconds--;
+
+                if (seconds < 0) {
+                    clearInterval(reportOtpTimer);
+                    countdown.innerText = "OTP expired. Please resend OTP.";
+                }
+            }, 1000);
+        }
+    
+    </script>
+}
