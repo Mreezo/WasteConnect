@@ -186,19 +186,49 @@
     <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
 
     <script>
-        let cameraStream;
+    async function startCamera() {
 
-        async function startCamera() {
-            const video = document.getElementById("camera");
-            video.style.display = "block";
+    const video = document.getElementById("camera");
 
+    video.style.display = "block";
 
-            cameraStream = await navigator.mediaDevices.getUserMedia({
-                video: true
-            });
+    if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+    }
 
-            video.srcObject = cameraStream;
-        }
+    try {
+
+        // Prefer the back camera
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    exact: "environment"
+                },
+                width: { ideal: 1920 },
+                height: { ideal: 1080 }
+            },
+            audio: false
+        });
+
+    }
+    catch {
+
+        // Fallback for laptops or browsers without rear camera support
+        cameraStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+                facingMode: {
+                    ideal: "environment"
+                }
+            },
+            audio: false
+        });
+
+    }
+
+    video.srcObject = cameraStream;
+
+    await video.play();
+}
 
         function capturePhoto() {
             const video = document.getElementById("camera");
