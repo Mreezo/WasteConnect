@@ -1,4 +1,4 @@
-﻿@model List<WasteConnect.Models.DumpingReport>
+﻿ @model List<WasteConnect.Models.DumpingReport>
 
 @{
     Layout = "_DashboardLayout";
@@ -65,6 +65,7 @@ else
                     <p><strong>Submitted:</strong> @report.CreatedAt.ToString("dd MMM yyyy")</p>
 
                     <div class="report-actions">
+
                         @if (report.Status == "Pending")
                         {
                             <a asp-action="EditReport"
@@ -79,6 +80,31 @@ else
                                 Delete
                             </button>
                         }
+                        else if (report.Status == "Cleaned")
+                        {
+                            <button type="button"
+                                    class="delete-btn"
+                                    onclick="openDeleteModal('@report.Id')">
+                                Delete
+                            </button>
+                        }
+                        else if (report.Status == "Assigned")
+                        {
+                            <button type="button"
+                                    class="delete-btn disabled-delete"
+                                    disabled>
+                                Assigned to Company
+                            </button>
+                        }
+                        else if (report.Status == "In Progress")
+                        {
+                            <button type="button"
+                                    class="delete-btn disabled-delete"
+                                    disabled>
+                                Cleanup in Progress
+                            </button>
+                        }
+
                     </div>
                 </div>
             </div>

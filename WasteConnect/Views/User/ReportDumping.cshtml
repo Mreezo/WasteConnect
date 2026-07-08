@@ -8,13 +8,13 @@
 <link rel="stylesheet"
       href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
 
-@if (TempData["Success"] != null)
+@if (TempData["ReportSuccess"] != null)
 {
     <div id="reportSuccessPopup" class="report-success-popup">
         <div class="report-success-box">
             <span>✓</span>
             <h3>Report Submitted</h3>
-            <p>@TempData["Success"]</p>
+            <p>@TempData["ReportSuccess"]</p>
 
             <button type="button" onclick="closeReportSuccessPopup()">
                 OK

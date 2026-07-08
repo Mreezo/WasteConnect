@@ -4466,3 +4466,10 @@ iframe {
         gap: 10px;
     }
 }
+.disabled-delete {
+    background: #d1d5db;
+    color: #6b7280;
+    cursor: not-allowed;
+    border: none;
+    opacity: .9;
+}

@@ -335,7 +335,7 @@ namespace WasteConnect.Controllers
 
             await _reportService.AddReportAsync(report);
 
-            TempData["Success"] =
+            TempData["ReportSuccess"] =
                 "Illegal dumping report submitted successfully.";
 
             return RedirectToAction(nameof(MyReports));
@@ -374,7 +374,7 @@ namespace WasteConnect.Controllers
 
             if (report.Status != "Pending")
             {
-                TempData["Error"] =
+                TempData["EditError"] =
                     "Only pending reports can be edited.";
 
                 return RedirectToAction(nameof(MyReports));
@@ -454,9 +454,12 @@ namespace WasteConnect.Controllers
             if (report == null)
                 return NotFound();
 
-            if (report.Status != "Pending")
+            if (report.Status != "Pending" &&
+                report.Status != "Cleaned")
             {
-                TempData["Error"] = "Only pending reports can be deleted.";
+                TempData["ReportError"] =
+                    "This report can no longer be deleted because it has already been assigned for cleanup.";
+
                 return RedirectToAction(nameof(MyReports));
             }
 
