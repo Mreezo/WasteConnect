@@ -335,7 +335,7 @@ namespace WasteConnect.Controllers
 
             await _reportService.AddReportAsync(report);
 
-            TempData["ReportSuccess"] =
+            TempData["ReportMessage"] =
                 "Illegal dumping report submitted successfully.";
 
             return RedirectToAction(nameof(MyReports));
