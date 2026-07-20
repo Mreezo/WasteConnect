@@ -1,8 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 using WasteConnect.Models;
 using WasteConnect.Services;
+using WasteConnect.ViewModel;
 using WasteConnect.ViewModels;
 namespace WasteConnect.Controllers
 {
@@ -13,18 +16,21 @@ namespace WasteConnect.Controllers
         private readonly CompanyCosmosService _companyService;
         private readonly ReportCosmosService _reportService;
         private readonly IConfiguration _configuration;
-        
+        private readonly EmailService _emailService;
+
 
         public AdminController(
             ReportCosmosService reportService,
             CompanyCosmosService companyService,
              UserManager<ApplicationUser> userManager,
-             IConfiguration configuration)
+             IConfiguration configuration,
+             EmailService emailService)
         {
             _reportService = reportService;
             _companyService = companyService;
             _userManager = userManager;
             _configuration = configuration;
+            _emailService = emailService;
         }
 
         public IActionResult Dashboard()
@@ -359,6 +365,190 @@ namespace WasteConnect.Controllers
 
             return View(communityUsers);
         }
+
+        [HttpGet]
+        public async Task<IActionResult> ManageCouncillors(string? search)
+        {
+            var allUsers = _userManager.Users.ToList();
+
+            var councillors = new List<ApplicationUser>();
+
+            foreach (var user in allUsers)
+            {
+                if (await _userManager.IsInRoleAsync(user, "Councillor"))
+                {
+                    councillors.Add(user);
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                search = search.Trim().ToLower();
+
+                councillors = councillors
+                    .Where(c =>
+                        (!string.IsNullOrEmpty(c.FullName) &&
+                         c.FullName.ToLower().Contains(search)) ||
+
+                        (!string.IsNullOrEmpty(c.Email) &&
+                         c.Email.ToLower().Contains(search)) ||
+
+                        (!string.IsNullOrEmpty(c.PhoneNumber) &&
+                         c.PhoneNumber.ToLower().Contains(search)) ||
+
+                        (c.WardNumber.HasValue &&
+                         c.WardNumber.Value.ToString().Contains(search))
+                    )
+                    .ToList();
+            }
+
+            councillors = councillors
+                .OrderBy(c => c.WardNumber)
+                .ThenBy(c => c.FullName)
+                .ToList();
+
+            return View(councillors);
+        }
+
+        [HttpGet]
+        public IActionResult CreateCounsellor()
+        {
+            return View(new CounsellorViewModel());
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateCouncillor(
+           CounsellorViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var normalizedEmail = model.Email.Trim().ToLower();
+
+            var existingUser =
+                await _userManager.FindByEmailAsync(normalizedEmail);
+
+            if (existingUser != null)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Email),
+                    "An account with this email address already exists.");
+
+                return View(model);
+            }
+
+            var existingPhoneUser = _userManager.Users
+                .FirstOrDefault(u =>
+                    u.PhoneNumber == model.PhoneNumber.Trim());
+
+            if (existingPhoneUser != null)
+            {
+                ModelState.AddModelError(
+                    nameof(model.PhoneNumber),
+                    "An account with this phone number already exists.");
+
+                return View(model);
+            }
+
+            var councillor = new ApplicationUser
+            {
+                FullName = model.FullName.Trim(),
+                UserName = normalizedEmail,
+                Email = normalizedEmail,
+                PhoneNumber = model.PhoneNumber.Trim(),
+                WardNumber = model.WardNumber,
+                PositionTitle = model.PositionTitle.Trim(),
+                IsAccountActive = true,
+                EmailConfirmed = false,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            // Create the account without a password.
+            var createResult =
+                await _userManager.CreateAsync(councillor);
+
+            if (!createResult.Succeeded)
+            {
+                foreach (var error in createResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View(model);
+            }
+
+            var roleResult =
+                await _userManager.AddToRoleAsync(
+                    councillor,
+                    "Councillor");
+
+            if (!roleResult.Succeeded)
+            {
+                // Remove the incomplete account if role assignment fails.
+                await _userManager.DeleteAsync(councillor);
+
+                foreach (var error in roleResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View(model);
+            }
+
+            try
+            {
+                var passwordToken =
+                    await _userManager.GeneratePasswordResetTokenAsync(
+                        councillor);
+
+                var encodedToken =
+                    WebEncoders.Base64UrlEncode(
+                        Encoding.UTF8.GetBytes(passwordToken));
+
+                var setupLink = Url.Action(
+                    action: "SetCouncillorPassword",
+                    controller: "Account",
+                    values: new
+                    {
+                        userId = councillor.Id,
+                        token = encodedToken
+                    },
+                    protocol: Request.Scheme);
+
+                if (string.IsNullOrWhiteSpace(setupLink))
+                {
+                    throw new InvalidOperationException(
+                        "The password setup link could not be generated.");
+                }
+
+                await _emailService.SendCouncillorPasswordSetupAsync(
+                    councillor.Email!,
+                    councillor.FullName,
+                    councillor.WardNumber!.Value,
+                    setupLink);
+
+                TempData["CouncillorSuccess"] =
+                    $"The councillor account was created successfully. " +
+                    $"A password setup email was sent to {councillor.Email}.";
+
+                return RedirectToAction(nameof(ManageCouncillors));
+            }
+            catch (Exception)
+            {
+                // Keep the account so the administrator can resend the email later.
+                TempData["CouncillorWarning"] =
+                    "The councillor account was created, but the password setup " +
+                    "email could not be sent. You will be able to resend it.";
+
+                return RedirectToAction(nameof(ManageCouncillors));
+            }
+        }
+
+
 
         [HttpGet]
         public async Task<IActionResult> UserProfile(string id)
