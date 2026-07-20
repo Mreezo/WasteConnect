@@ -18,7 +18,9 @@ namespace WasteConnect.Services
             {
                 "User",
                 "Company",
-                "Admin"
+                "Admin",
+                "Counsellor"
+                
             };
 
             foreach (var role in roles)
