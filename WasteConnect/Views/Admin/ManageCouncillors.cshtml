@@ -1,0 +1,281 @@
+﻿@model IEnumerable<WasteConnect.Models.ApplicationUser>
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Manage Councillors";
+}
+
+<div class="manage-councillors-page">
+
+    @if (TempData["Success"] != null)
+    {
+        <div id="successToast" class="success-toast">
+            <span>✓</span>
+            <p>@TempData["Success"]</p>
+        </div>
+    }
+
+    <div class="portal-page-header">
+
+        <div>
+
+            <h2>Manage Councillors</h2>
+
+            <p>
+                Create, monitor and manage municipal councillor accounts,
+                ward assignments and account status.
+            </p>
+
+        </div>
+
+        <a asp-action="CreateCouncillor"
+           class="create-councillor-btn">
+
+            <span>＋</span>
+
+            Add Councillor
+
+        </a>
+
+    </div>
+
+    <form method="get" class="search-panel">
+
+        <div class="search-box">
+
+            <span class="search-icon">🔍</span>
+
+            <input type="text"
+                   name="search"
+                   value="@Context.Request.Query["search"]"
+                   placeholder="Search by name, email, phone or ward..." />
+
+        </div>
+
+        <button type="submit">
+
+            Search
+
+        </button>
+
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+
+            <div class="empty-icon">
+
+                👥
+
+            </div>
+
+            <h3>No Councillors Found</h3>
+
+            <p>
+
+                There are currently no councillor accounts
+                in the WasteConnect system.
+
+            </p>
+
+            <a asp-action="CreateCouncillor"
+               class="empty-create-btn">
+
+                Create First Councillor
+
+            </a>
+
+        </div>
+    }
+    else
+    {
+
+        <div class="councillor-grid">
+
+            @foreach (var councillor in Model)
+            {
+
+                <div class="councillor-card">
+
+                    <div class="card-top">
+
+                        <div class="profile-circle">
+
+                            @if (!string.IsNullOrWhiteSpace(councillor.FullName))
+                            {
+                                @councillor.FullName.Substring(0, 1).ToUpper()
+                            }
+                            else
+                            {
+                                @:?
+                            }
+
+                        </div>
+
+                        <div class="councillor-name">
+
+                            <h3>
+
+                                @councillor.FullName
+
+                            </h3>
+
+                            <span>
+
+                                @councillor.PositionTitle
+
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                    <div class="ward-section">
+
+                        <div class="ward-icon">
+
+                            📍
+
+                        </div>
+
+                        <div>
+
+                            <small>
+
+                                Assigned Ward
+
+                            </small>
+
+                            <strong>
+
+                                Ward @councillor.WardNumber
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div class="details-grid">
+
+                        <div class="detail-item">
+
+                            <span>Email</span>
+
+                            <strong>
+
+                                @councillor.Email
+
+                            </strong>
+
+                        </div>
+
+                        <div class="detail-item">
+
+                            <span>Phone</span>
+
+                            <strong>
+
+                                @councillor.PhoneNumber
+
+                            </strong>
+
+                        </div>
+
+                    </div>
+
+                    <div class="status-area">
+
+                        @if (councillor.IsAccountActive)
+                        {
+                            <span class="status active">
+
+                                Active
+
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="status inactive">
+
+                                Disabled
+
+                            </span>
+                        }
+
+                        @if (string.IsNullOrEmpty(councillor.PasswordHash))
+                        {
+                            <span class="status pending">
+
+                                Invitation Sent
+
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="status ready">
+
+                                Password Created
+
+                            </span>
+                        }
+
+                    </div>
+
+                    <div class="card-actions">
+
+                        <a asp-action="CouncillorDetails"
+                           asp-route-id="@councillor.Id"
+                           class="view-btn">
+
+                            View Profile
+
+                        </a>
+
+                        <a asp-action="ResendCouncillorInvite"
+                           asp-route-id="@councillor.Id"
+                           class="resend-btn">
+
+                            Resend Invite
+
+                        </a>
+
+                    </div>
+
+                    <div class="card-footer">
+
+                        @if (councillor.IsAccountActive)
+                        {
+                            <a asp-action="DisableCouncillor"
+                               asp-route-id="@councillor.Id"
+                               class="disable-btn">
+
+                                Disable Account
+
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-action="EnableCouncillor"
+                               asp-route-id="@councillor.Id"
+                               class="enable-btn">
+
+                                Enable Account
+
+                            </a>
+                        }
+
+                    </div>
+
+                </div>
+
+            }
+
+        </div>
+
+    }
+
+</div>
+
+<style>
