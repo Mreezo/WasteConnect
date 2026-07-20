@@ -411,16 +411,16 @@ namespace WasteConnect.Controllers
         }
 
         [HttpGet]
-        public IActionResult CreateCounsellor()
+        public IActionResult CreateCouncillor()
         {
-            return View(new CounsellorViewModel());
+            return View(new CreateCouncillorViewModel());
         }
 
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> CreateCouncillor(
-           CounsellorViewModel model)
+           CreateCouncillorViewModel model)
         {
             if (!ModelState.IsValid)
             {
