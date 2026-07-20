@@ -19,7 +19,7 @@ namespace WasteConnect.Services
                 "User",
                 "Company",
                 "Admin",
-                "Counsellor"
+                "Councillor"
                 
             };
 

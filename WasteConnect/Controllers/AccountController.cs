@@ -3,7 +3,10 @@ using Microsoft.Extensions.Caching.Memory;
 using WasteConnect.Services;
 using Microsoft.AspNetCore.Mvc;
 using WasteConnect.Models;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Text;
 using WasteConnect.ViewModels;
+using WasteConnect.ViewModel;
 
 namespace WasteConnect.Controllers
 {
@@ -73,6 +76,11 @@ namespace WasteConnect.Controllers
             if (await _userManager.IsInRoleAsync(user, "Company"))
             {
                 return RedirectToAction("Dashboard", "Company");
+            }
+
+            if (await _userManager.IsInRoleAsync(user, "Councillor"))
+            {
+                return RedirectToAction("Dashboard", "Councillor");
             }
 
             if (await _userManager.IsInRoleAsync(user, "User"))
@@ -293,6 +301,50 @@ namespace WasteConnect.Controllers
             {
                 ModelState.AddModelError("", error.Description);
             }
+
+            return View(model);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> SetCouncillorPassword(
+    string userId,
+    string token)
+        {
+            if (string.IsNullOrWhiteSpace(userId) ||
+                string.IsNullOrWhiteSpace(token))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (!await _userManager.IsInRoleAsync(user, "Councillor"))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            if (await _userManager.HasPasswordAsync(user))
+            {
+                TempData["PasswordResetSuccess"] =
+                    "Your password has already been created.";
+
+                return RedirectToAction(nameof(Login));
+            }
+
+            var decodedToken =
+                Encoding.UTF8.GetString(
+                    WebEncoders.Base64UrlDecode(token));
+
+            var model = new CounsellorPasswordViewModel
+            {
+                UserId = userId,
+                Token = decodedToken
+            };
 
             return View(model);
         }
