@@ -9,5 +9,11 @@ namespace WasteConnect.Models
 
         public string? HomeAddress { get; set; }
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        public int? WardNumber { get; set; }
+
+        public string? PositionTitle { get; set; }
+
+        public bool IsAccountActive { get; set; } = true;
     }
 }
