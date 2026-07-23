@@ -144,5 +144,96 @@ namespace WasteConnect.Services
                 plainTextContent: plainTextContent
             );
         }
+
+
+        public async Task SendCouncillorAccountActivatedAsync(
+    string toEmail,
+    string fullName,
+    string loginUrl)
+        {
+            var subject = "Your WasteConnect Account Is Now Active";
+
+            var htmlContent = $@"
+                <div style='font-family:Arial,sans-serif;background:#f4f7f3;padding:30px;'>
+
+                    <div style='max-width:560px;
+                                margin:auto;
+                                background:white;
+                                border-radius:16px;
+                                padding:32px;
+                                box-shadow:0 8px 24px rgba(15,23,42,.08);'>
+
+                        <h2 style='color:#1f8f4d;'>
+                            🎉 Account Activated Successfully
+                        </h2>
+
+                        <p>Hello <strong>{fullName}</strong>,</p>
+
+                        <p>
+
+                            Congratulations!
+
+                            <br /><br />
+
+                            Your WasteConnect Councillor account has been activated successfully.
+
+                        </p>
+
+                        <p>
+
+                            You may now log in using your email address
+                            and the password you have just created.
+
+                        </p>
+
+                        <div style='text-align:center;margin:35px 0;'>
+
+                            <a href='{loginUrl}'
+
+                               style='display:inline-block;
+                                      background:#1f8f4d;
+                                      color:white;
+                                      padding:15px 30px;
+                                      text-decoration:none;
+                                      border-radius:10px;
+                                      font-weight:bold;'>
+
+                                Login to WasteConnect
+
+                            </a>
+
+                        </div>
+
+                        <p>
+
+                            Thank you for helping keep our communities cleaner.
+
+                        </p>
+
+                        <hr style='border:none;border-top:1px solid #e5e7eb;margin-top:30px;'>
+
+                        <p style='font-size:13px;color:#64748b;'>
+
+                            WasteConnect — Cleaner communities, better tomorrow.
+
+                        </p>
+
+                    </div>
+
+                </div>";
+
+            var plainTextContent =
+                $"Hello {fullName}, your WasteConnect account has been activated successfully. Login here: {loginUrl}";
+
+            await _emailClient.SendAsync(
+                WaitUntil.Completed,
+                senderAddress: _senderAddress,
+                recipientAddress: toEmail,
+                subject: subject,
+                htmlContent: htmlContent,
+                plainTextContent: plainTextContent);
+        }
+
+
     }
 }
