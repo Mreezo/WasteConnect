@@ -3,279 +3,675 @@
 @{
     Layout = "_DashboardLayout";
     ViewData["Title"] = "Manage Councillors";
+
+    var councillors = Model?.ToList()
+        ?? new List<WasteConnect.Models.ApplicationUser>();
+
+    var totalCouncillors = councillors.Count;
+
+    var activeCouncillors = councillors.Count(c =>
+        c.IsAccountActive);
+
+    var pendingInvitations = councillors.Count(c =>
+        string.IsNullOrWhiteSpace(c.PasswordHash));
+
+    var completedAccounts = councillors.Count(c =>
+        !string.IsNullOrWhiteSpace(c.PasswordHash));
+
+    var disabledCouncillors = councillors.Count(c =>
+        !c.IsAccountActive);
 }
 
 <div class="manage-councillors-page">
 
     @if (TempData["Success"] != null)
     {
-        <div id="successToast" class="success-toast">
-            <span>✓</span>
-            <p>@TempData["Success"]</p>
+        <div id="successToast"
+             class="page-toast success-toast">
+
+            <div class="toast-icon">✓</div>
+
+            <div>
+                <strong>Success</strong>
+                <p>@TempData["Success"]</p>
+            </div>
+
+            <button type="button"
+                    class="toast-close"
+                    onclick="closeToast('successToast')">
+                ×
+            </button>
+
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div id="errorToast"
+             class="page-toast error-toast">
+
+            <div class="toast-icon">!</div>
+
+            <div>
+                <strong>Something went wrong</strong>
+                <p>@TempData["Error"]</p>
+            </div>
+
+            <button type="button"
+                    class="toast-close"
+                    onclick="closeToast('errorToast')">
+                ×
+            </button>
+
         </div>
     }
 
     <div class="portal-page-header">
 
-        <div>
+        <div class="header-text">
+            <span class="page-label">Municipal Administration</span>
 
             <h2>Manage Councillors</h2>
 
             <p>
-                Create, monitor and manage municipal councillor accounts,
-                ward assignments and account status.
+                Create and monitor municipal councillor accounts,
+                ward assignments and password invitation progress.
             </p>
-
         </div>
 
-        <a asp-action="CreateCouncillor"
-           class="create-councillor-btn">
+        <a asp-controller="Admin"
+           asp-action="CreateCouncillor"
+           class="add-councillor-btn">
 
-            <span>＋</span>
-
-            Add Councillor
+            <span class="add-icon">＋</span>
+            <span>Add Councillor</span>
 
         </a>
 
     </div>
 
-    <form method="get" class="search-panel">
+    <div class="councillor-statistics">
 
-        <div class="search-box">
+        <div class="stat-card">
 
-            <span class="search-icon">🔍</span>
+            <div class="stat-icon total-icon">
+                👥
+            </div>
 
-            <input type="text"
-                   name="search"
-                   value="@Context.Request.Query["search"]"
-                   placeholder="Search by name, email, phone or ward..." />
+            <div class="stat-content">
+                <span>Total Councillors</span>
+                <strong>@totalCouncillors</strong>
+                <small>Registered accounts</small>
+            </div>
 
         </div>
 
-        <button type="submit">
+        <div class="stat-card">
 
-            Search
+            <div class="stat-icon active-icon">
+                ✓
+            </div>
 
-        </button>
+            <div class="stat-content">
+                <span>Active Accounts</span>
+                <strong>@activeCouncillors</strong>
+                <small>Currently permitted</small>
+            </div>
 
-    </form>
+        </div>
 
-    @if (!Model.Any())
-    {
-        <div class="empty-state">
+        <div class="stat-card">
 
-            <div class="empty-icon">
+            <div class="stat-icon pending-icon">
+                ✉
+            </div>
 
-                👥
+            <div class="stat-content">
+                <span>Pending Setup</span>
+                <strong>@pendingInvitations</strong>
+                <small>Waiting for password</small>
+            </div>
+
+        </div>
+
+        <div class="stat-card">
+
+            <div class="stat-icon disabled-icon">
+                ⛔
+            </div>
+
+            <div class="stat-content">
+                <span>Disabled</span>
+                <strong>@disabledCouncillors</strong>
+                <small>Access restricted</small>
+            </div>
+
+        </div>
+
+    </div>
+
+    <div class="councillors-list-panel">
+
+        <div class="panel-header">
+
+            <div>
+                <h3>Councillor Directory</h3>
+
+                <p>
+                    View councillor contact details, assigned wards
+                    and current account status.
+                </p>
+            </div>
+
+            <div class="result-count">
+                @totalCouncillors
+                @(totalCouncillors == 1 ? "Councillor" : "Councillors")
+            </div>
+
+        </div>
+
+        <form asp-controller="Admin"
+              asp-action="ManageCouncillors"
+              method="get"
+              class="councillor-search-form">
+
+            <div class="search-input-wrapper">
+
+                <span class="search-icon">⌕</span>
+
+                <input type="text"
+                       name="search"
+                       value="@Context.Request.Query["search"]"
+                       placeholder="Search by name, email, phone number or ward..." />
+
+                @if (!string.IsNullOrWhiteSpace(
+                                Context.Request.Query["search"]))
+                {
+                    <a asp-controller="Admin"
+                       asp-action="ManageCouncillors"
+                       class="clear-search-btn"
+                       title="Clear search">
+                        ×
+                    </a>
+                }
 
             </div>
 
-            <h3>No Councillors Found</h3>
-
-            <p>
-
-                There are currently no councillor accounts
-                in the WasteConnect system.
-
-            </p>
-
-            <a asp-action="CreateCouncillor"
-               class="empty-create-btn">
-
-                Create First Councillor
-
-            </a>
-
-        </div>
-    }
-    else
-    {
-
-        <div class="councillor-grid">
-
-            @foreach (var councillor in Model)
-            {
-
-                <div class="councillor-card">
-
-                    <div class="card-top">
-
-                        <div class="profile-circle">
-
-                            @if (!string.IsNullOrWhiteSpace(councillor.FullName))
-                            {
-                                @councillor.FullName.Substring(0, 1).ToUpper()
-                            }
-                            else
-                            {
-                                @:?
-                            }
-
-                        </div>
-
-                        <div class="councillor-name">
-
-                            <h3>
-
-                                @councillor.FullName
-
-                            </h3>
-
-                            <span>
-
-                                @councillor.PositionTitle
-
-                            </span>
-
-                        </div>
-
-                    </div>
-
-                    <div class="ward-section">
-
-                        <div class="ward-icon">
-
-                            📍
-
-                        </div>
-
-                        <div>
-
-                            <small>
-
-                                Assigned Ward
-
-                            </small>
-
-                            <strong>
-
-                                Ward @councillor.WardNumber
-
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                    <div class="details-grid">
-
-                        <div class="detail-item">
-
-                            <span>Email</span>
-
-                            <strong>
-
-                                @councillor.Email
-
-                            </strong>
-
-                        </div>
-
-                        <div class="detail-item">
-
-                            <span>Phone</span>
-
-                            <strong>
-
-                                @councillor.PhoneNumber
-
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                    <div class="status-area">
-
-                        @if (councillor.IsAccountActive)
-                        {
-                            <span class="status active">
-
-                                Active
-
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="status inactive">
-
-                                Disabled
-
-                            </span>
-                        }
-
-                        @if (string.IsNullOrEmpty(councillor.PasswordHash))
-                        {
-                            <span class="status pending">
-
-                                Invitation Sent
-
-                            </span>
-                        }
-                        else
-                        {
-                            <span class="status ready">
-
-                                Password Created
-
-                            </span>
-                        }
-
-                    </div>
-
-                    <div class="card-actions">
-
-                        <a asp-action="CouncillorDetails"
-                           asp-route-id="@councillor.Id"
-                           class="view-btn">
-
-                            View Profile
-
-                        </a>
-
-                        <a asp-action="ResendCouncillorInvite"
-                           asp-route-id="@councillor.Id"
-                           class="resend-btn">
-
-                            Resend Invite
-
-                        </a>
-
-                    </div>
-
-                    <div class="card-footer">
-
-                        @if (councillor.IsAccountActive)
-                        {
-                            <a asp-action="DisableCouncillor"
-                               asp-route-id="@councillor.Id"
-                               class="disable-btn">
-
-                                Disable Account
-
-                            </a>
-                        }
-                        else
-                        {
-                            <a asp-action="EnableCouncillor"
-                               asp-route-id="@councillor.Id"
-                               class="enable-btn">
-
-                                Enable Account
-
-                            </a>
-                        }
-
-                    </div>
-
+            <button type="submit"
+                    class="search-submit-btn">
+                Search
+            </button>
+
+        </form>
+
+        @if (!councillors.Any())
+        {
+            <div class="empty-councillors-state">
+
+                <div class="empty-state-icon">
+                    👥
                 </div>
 
-            }
+                <h3>No Councillors Found</h3>
 
-        </div>
+                @if (!string.IsNullOrWhiteSpace(
+                            Context.Request.Query["search"]))
+                {
+                    <p>
+                        No councillor account matched your search.
+                        Try another name, email address or ward number.
+                    </p>
 
-    }
+                    <a asp-controller="Admin"
+                       asp-action="ManageCouncillors"
+                       class="clear-results-btn">
+                        Clear Search
+                    </a>
+                }
+                else
+                {
+                    <p>
+                        No councillor accounts have been created yet.
+                        Add the first councillor to begin managing wards.
+                    </p>
+
+                    <a asp-controller="Admin"
+                       asp-action="CreateCouncillor"
+                       class="empty-add-btn">
+                        Add First Councillor
+                    </a>
+                }
+
+            </div>
+        }
+        else
+        {
+            <div class="councillor-table-wrapper">
+
+                <table class="councillor-table">
+
+                    <thead>
+                        <tr>
+                            <th>Councillor</th>
+                            <th>Ward</th>
+                            <th>Contact Details</th>
+                            <th>Account Status</th>
+                            <th>Password Setup</th>
+                            <th class="actions-heading">Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        @foreach (var councillor in councillors)
+                        {
+                            var fullName =
+                            string.IsNullOrWhiteSpace(councillor.FullName)
+                            ? "Unnamed Councillor"
+                            : councillor.FullName;
+
+                            var initials = "?";
+
+                            if (!string.IsNullOrWhiteSpace(
+                            councillor.FullName))
+                            {
+                                var nameParts = councillor.FullName
+                                .Split(
+                                ' ',
+                                StringSplitOptions.RemoveEmptyEntries);
+
+                                if (nameParts.Length >= 2)
+                                {
+                                    initials =
+                                    $"{nameParts[0][0]}{nameParts[^1][0]}"
+                                    .ToUpper();
+                                }
+                                else if (nameParts.Length == 1)
+                                {
+                                    initials =
+                                    nameParts[0][0]
+                                    .ToString()
+                                    .ToUpper();
+                                }
+                            }
+
+                            var positionTitle =
+                            string.IsNullOrWhiteSpace(
+                            councillor.PositionTitle)
+                            ? "Ward Councillor"
+                            : councillor.PositionTitle;
+
+                            var wardDisplay =
+                            councillor.WardNumber.HasValue
+                            ? $"Ward {councillor.WardNumber.Value}"
+                            : "Not assigned";
+
+                            var emailDisplay =
+                            string.IsNullOrWhiteSpace(councillor.Email)
+                            ? "No email available"
+                            : councillor.Email;
+
+                            var phoneDisplay =
+                            string.IsNullOrWhiteSpace(
+                            councillor.PhoneNumber)
+                            ? "No phone available"
+                            : councillor.PhoneNumber;
+
+                            var passwordCreated =
+                            !string.IsNullOrWhiteSpace(
+                            councillor.PasswordHash);
+
+                            <tr>
+
+                                <td data-label="Councillor">
+
+                                    <div class="councillor-identity">
+
+                                        @if (!string.IsNullOrWhiteSpace(
+                                                                        councillor.ProfileImageUrl))
+                                        {
+                                            <img src="@councillor.ProfileImageUrl"
+                                                 alt="@fullName"
+                                                 class="councillor-avatar-image" />
+                                        }
+                                        else
+                                        {
+                                            <div class="councillor-avatar">
+                                                @initials
+                                            </div>
+                                        }
+
+                                        <div class="identity-details">
+
+                                            <strong class="councillor-full-name">
+                                                @fullName
+                                            </strong>
+
+                                            <span class="position-title">
+                                                @positionTitle
+                                            </span>
+
+                                            <small class="created-date">
+                                                Added
+                                                @councillor.CreatedAt
+                                                .ToString("dd MMM yyyy")
+                                            </small>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+                                <td data-label="Ward">
+
+                                    @if (councillor.WardNumber.HasValue)
+                                    {
+                                        <span class="ward-table-badge">
+                                            <span>●</span>
+                                            @wardDisplay
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="ward-not-assigned">
+                                            Not assigned
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td data-label="Contact Details">
+
+                                    <div class="contact-details">
+
+                                        <a href="mailto:@councillor.Email"
+                                           class="contact-link"
+                                           title="@emailDisplay">
+
+                                            <span class="contact-symbol">✉</span>
+                                            <span>@emailDisplay</span>
+
+                                        </a>
+
+                                        <a href="tel:@councillor.PhoneNumber"
+                                           class="contact-link">
+
+                                            <span class="contact-symbol">☎</span>
+                                            <span>@phoneDisplay</span>
+
+                                        </a>
+
+                                    </div>
+
+                                </td>
+
+                                <td data-label="Account Status">
+
+                                    @if (councillor.IsAccountActive)
+                                    {
+                                        <span class="table-status active-status">
+                                            <span class="status-dot"></span>
+                                            Active
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="table-status disabled-status">
+                                            <span class="status-dot"></span>
+                                            Disabled
+                                        </span>
+                                    }
+
+                                </td>
+
+                                <td data-label="Password Setup">
+
+                                    @if (passwordCreated)
+                                    {
+                                        <div class="setup-status">
+
+                                            <span class="table-status ready-status">
+                                                <span class="status-dot"></span>
+                                                Password Created
+                                            </span>
+
+                                            <small>
+                                                Account is ready for login
+                                            </small>
+
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="setup-status">
+
+                                            <span class="table-status pending-status">
+                                                <span class="status-dot"></span>
+                                                Invitation Sent
+                                            </span>
+
+                                            <small>
+                                                Waiting for password setup
+                                            </small>
+
+                                        </div>
+                                    }
+
+                                </td>
+
+                                <td data-label="Actions"
+                                    class="actions-cell">
+
+                                    <div class="table-actions">
+
+                                        <a asp-controller="Admin"
+                                           asp-action="CouncillorDetails"
+                                           asp-route-id="@councillor.Id"
+                                           class="view-profile-btn">
+                                            View
+                                        </a>
+
+                                        @if (!passwordCreated)
+                                        {
+                                            <a asp-controller="Admin"
+                                               asp-action="ResendCouncillorInvite"
+                                               asp-route-id="@councillor.Id"
+                                               class="resend-invite-btn"
+                                               onclick="return confirmResendInvitation();">
+                                                Resend
+                                            </a>
+                                        }
+
+                                        <button type="button"
+                                                class="more-actions-btn"
+                                                onclick="toggleActionMenu(
+                                                            '@councillor.Id',
+                                                            event)"
+                                                aria-label="More actions">
+                                            ⋮
+                                        </button>
+
+                                        <div id="actionMenu-@councillor.Id"
+                                             class="action-menu">
+
+                                            <a asp-controller="Admin"
+                                               asp-action="CouncillorDetails"
+                                               asp-route-id="@councillor.Id">
+                                                View full profile
+                                            </a>
+
+                                            @if (!passwordCreated)
+                                            {
+                                                <a asp-controller="Admin"
+                                                   asp-action="ResendCouncillorInvite"
+                                                   asp-route-id="@councillor.Id"
+                                                   onclick="return confirmResendInvitation();">
+                                                    Resend invitation
+                                                </a>
+                                            }
+
+                                            <span class="future-action">
+                                                Account controls coming next
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                        }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+        }
+
+    </div>
 
 </div>
 
 <style>
+    
+
+    @@media (max-width: 1150px) {
+        .councillor-statistics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @@media (max-width: 760px) {
+        .portal-page-header {
+            flex-direction: column;
+        }
+
+        .add-councillor-btn {
+            width: 100%;
+        }
+
+        .councillor-statistics {
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .stat-card {
+            padding: 15px;
+        }
+
+        .stat-icon {
+            width: 42px;
+            height: 42px;
+        }
+
+        .panel-header {
+            align-items: flex-start;
+            flex-direction: column;
+        }
+
+        .councillor-search-form {
+            flex-direction: column;
+        }
+
+        .search-submit-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (max-width: 540px) {
+        .portal-page-header h2 {
+            font-size: 25px;
+        }
+
+        .councillor-statistics {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-card {
+            padding: 17px;
+        }
+
+        .panel-header,
+        .councillor-search-form {
+            padding-left: 17px;
+            padding-right: 17px;
+        }
+
+        .page-toast {
+            top: 14px;
+            right: 15px;
+            left: 15px;
+            width: auto;
+        }
+    }
+</style>
+
+@section Scripts {
+    <script>
+        function closeToast(toastId) {
+            const toast = document.getElementById(toastId);
+
+            if (!toast) {
+                return;
+            }
+
+            toast.classList.add("hide-toast");
+
+            setTimeout(() => {
+                toast.remove();
+            }, 300);
+        }
+
+        function toggleActionMenu(councillorId, event) {
+            event.stopPropagation();
+
+            const selectedMenu = document.getElementById(
+                `actionMenu-${councillorId}`
+            );
+
+            document.querySelectorAll(".action-menu").forEach(menu => {
+                if (menu !== selectedMenu) {
+                    menu.classList.remove("show");
+                }
+            });
+
+            selectedMenu.classList.toggle("show");
+        }
+
+        function confirmResendInvitation() {
+            return confirm(
+                "Send another secure password setup invitation to this councillor?"
+            );
+        }
+
+        document.addEventListener("click", function () {
+            document.querySelectorAll(".action-menu").forEach(menu => {
+                menu.classList.remove("show");
+            });
+        });
+
+        document.querySelectorAll(".action-menu").forEach(menu => {
+            menu.addEventListener("click", function (event) {
+                event.stopPropagation();
+            });
+        });
+
+        const successToast = document.getElementById("successToast");
+        const errorToast = document.getElementById("errorToast");
+
+        if (successToast) {
+            setTimeout(() => {
+                closeToast("successToast");
+            }, 5000);
+        }
+
+        if (errorToast) {
+            setTimeout(() => {
+                closeToast("errorToast");
+            }, 6000);
+        }
+    </script>
+}
