@@ -64,29 +64,133 @@
 
                 @if (User.IsInRole("Admin"))
                 {
-                    <a asp-controller="Admin" asp-action="Dashboard">📊 Admin Dashboard</a>
-                    <a asp-controller="Admin" asp-action="ManageUsers">👥 Manage Users</a>
-                    <a asp-controller="Admin" asp-action="ManageCompanies">🏢 Manage Companies</a>
-                    <a asp-controller="Admin" asp-action="Reports">📍 Reports</a>
+                    <a asp-controller="Admin" asp-action="Dashboard">
+                        📊 Dashboard
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="Reports">
+                        📍 Reports
+                    </a>
+
                     <div class="sidebar-dropdown">
+
+                        <button type="button"
+                                class="sidebar-dropdown-btn"
+                                onclick="toggleCompanyDropdown()">
+
+                            🏢 Companies
+
+                            <span>⌄</span>
+
+                        </button>
+
+                        <div id="companyDropdown"
+                             class="sidebar-dropdown-menu">
+
+                            <a asp-controller="Admin"
+                               asp-action="ManageCompanies">
+
+                                Manage Companies
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sidebar-dropdown">
+
+                        <button type="button"
+                                class="sidebar-dropdown-btn"
+                                onclick="toggleCouncillorDropdown()">
+
+                            🏛 Councillors
+
+                            <span>⌄</span>
+
+                        </button>
+
+                        <div id="councillorDropdown"
+                             class="sidebar-dropdown-menu">
+
+                            <a asp-controller="Admin"
+                               asp-action="ManageCouncillors">
+
+                                Manage Councillors
+
+                            </a>
+
+                            <a asp-controller="Admin"
+                               asp-action="CreateCouncillor">
+
+                                Add Councillor
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sidebar-dropdown">
+
+                        <button type="button"
+                                class="sidebar-dropdown-btn"
+                                onclick="toggleUserDropdown()">
+
+                            👥 Users
+
+                            <span>⌄</span>
+
+                        </button>
+
+                        <div id="userDropdown"
+                             class="sidebar-dropdown-menu">
+
+                            <a asp-controller="Admin"
+                               asp-action="ManageUsers">
+
+                                Manage Users
+
+                            </a>
+
+                        </div>
+
+                    </div>
+
+                    <div class="sidebar-dropdown">
+
                         <button type="button"
                                 class="sidebar-dropdown-btn"
                                 onclick="toggleAnalyticsDropdown()">
+
                             📈 Analytics
+
                             <span>⌄</span>
+
                         </button>
 
-                        <div id="analyticsDropdown" class="sidebar-dropdown-menu">
-                            <a asp-controller="Admin" asp-action="ReportAnalytics">
+                        <div id="analyticsDropdown"
+                             class="sidebar-dropdown-menu">
+
+                            <a asp-controller="Admin"
+                               asp-action="ReportAnalytics">
+
                                 Report Analytics
+
                             </a>
 
-                            <a asp-controller="Admin" asp-action="CommunityAnalytics">
+                            <a asp-controller="Admin"
+                               asp-action="CommunityAnalytics">
+
                                 Community Analytics
+
                             </a>
+
                         </div>
+
                     </div>
                 }
+                
 
                 @if (User.IsInRole("Company"))
                 {
@@ -284,11 +388,76 @@
     </div>
 
     <script>
-        function toggleSidebar() {
-            document.getElementById("sidebar").classList.toggle("show-sidebar");
-            document.getElementById("sidebarOverlay").classList.toggle("show-overlay");
+              function toggleSidebar() {
+
+            document
+                .getElementById("sidebar")
+                .classList
+                .toggle("show-sidebar");
+
+            document
+                .getElementById("sidebarOverlay")
+                .classList
+                .toggle("show-overlay");
         }
-                function toggleAnalyticsDropdown() {
+
+        function closeAllDropdowns(exceptId = null) {
+
+            const dropdowns = [
+                "companyDropdown",
+                "councillorDropdown",
+                "userDropdown",
+                "analyticsDropdown"
+            ];
+
+            dropdowns.forEach(id => {
+
+                if (id !== exceptId) {
+
+                    document
+                        .getElementById(id)
+                        ?.classList
+                        .remove("show-dropdown");
+
+                }
+
+            });
+        }
+
+        function toggleCompanyDropdown() {
+
+            closeAllDropdowns("companyDropdown");
+
+            document
+                .getElementById("companyDropdown")
+                .classList
+                .toggle("show-dropdown");
+        }
+
+        function toggleCouncillorDropdown() {
+
+            closeAllDropdowns("councillorDropdown");
+
+            document
+                .getElementById("councillorDropdown")
+                .classList
+                .toggle("show-dropdown");
+        }
+
+        function toggleUserDropdown() {
+
+            closeAllDropdowns("userDropdown");
+
+            document
+                .getElementById("userDropdown")
+                .classList
+                .toggle("show-dropdown");
+        }
+
+        function toggleAnalyticsDropdown() {
+
+            closeAllDropdowns("analyticsDropdown");
+
             document
                 .getElementById("analyticsDropdown")
                 .classList
