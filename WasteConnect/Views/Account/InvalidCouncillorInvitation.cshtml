@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Invalid Invitation";
+    Layout = "_AuthLayout";
+}
+
+<div class="invitation-page">
+    <div class="invitation-card">
+
+        <div class="error-icon">!</div>
+
+        <h2>Invitation Link Invalid</h2>
+
+        <p>
+            This councillor invitation link is invalid, expired,
+            or has already been used.
+        </p>
+
+        <p>
+            Please contact the WasteConnect administrator to request
+            a new password setup invitation.
+        </p>
+
+        <a asp-controller="Account"
+           asp-action="Login"
+           class="login-button">
+            Go to Login
+        </a>
+
+    </div>
+</div>
