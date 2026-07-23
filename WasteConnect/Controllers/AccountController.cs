@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Caching.Memory;
-using WasteConnect.Services;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using WasteConnect.Models;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using System.Text;
-using WasteConnect.ViewModels;
+using WasteConnect.Models;
+using WasteConnect.Services;
 using WasteConnect.ViewModel;
+using WasteConnect.ViewModels;
 
 namespace WasteConnect.Controllers
 {
@@ -348,6 +349,134 @@ namespace WasteConnect.Controllers
 
             return View(model);
         }
+
+        [HttpGet]
+        [AllowAnonymous]
+        public IActionResult InvalidCouncillorInvitation()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SetCouncillorPassword( CounsellorPasswordViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var councillor = await _userManager.FindByIdAsync(model.UserId);
+
+            if (councillor == null)
+            {
+                return RedirectToAction(nameof(InvalidCouncillorInvitation));
+            }
+
+            var isCouncillor = await _userManager.IsInRoleAsync(
+                councillor,
+                "Councillor");
+
+            if (!isCouncillor)
+            {
+                return RedirectToAction(nameof(InvalidCouncillorInvitation));
+            }
+
+            // Stop the invitation link from being used again.
+            if (!string.IsNullOrWhiteSpace(councillor.PasswordHash))
+            {
+                TempData["LoginMessage"] =
+                    "Your password has already been created. Please log in.";
+
+                return RedirectToAction(nameof(Login));
+            }
+
+            string decodedToken;
+
+            try
+            {
+                decodedToken = Encoding.UTF8.GetString(
+                    WebEncoders.Base64UrlDecode(model.Token));
+            }
+            catch
+            {
+                return RedirectToAction(nameof(InvalidCouncillorInvitation));
+            }
+
+            var passwordResult =
+                await _userManager.ResetPasswordAsync(
+                    councillor,
+                    decodedToken,
+                    model.Password);
+
+            if (!passwordResult.Succeeded)
+            {
+                foreach (var error in passwordResult.Errors)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        error.Description);
+                }
+
+                return View(model);
+            }
+
+            // Activate the councillor account.
+
+            councillor.EmailConfirmed = true;
+            councillor.IsAccountActive = true;
+
+            var updateResult = await _userManager.UpdateAsync(councillor);
+
+            var loginUrl = Url.Action(
+                "Login",
+                "Account",
+                null,
+                Request.Scheme);
+
+            await _emailService.SendCouncillorAccountActivatedAsync(
+                councillor.Email!,
+                councillor.FullName!,
+                loginUrl!);
+
+            if (!updateResult.Succeeded)
+            {
+                foreach (var error in updateResult.Errors)
+                {
+                    ModelState.AddModelError(
+                        string.Empty,
+                        error.Description);
+                }
+
+                return View(model);
+            }
+
+            return RedirectToAction(
+                nameof(CouncillorPasswordCreated),
+                new { userId = councillor.Id });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CouncillorPasswordCreated(string userId)
+        {
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            var councillor = await _userManager.FindByIdAsync(userId);
+
+            if (councillor == null)
+            {
+                return RedirectToAction(nameof(Login));
+            }
+
+            ViewBag.FullName = councillor.FullName;
+
+            return View();
+        }
+
+       
 
         [HttpPost]
         [ValidateAntiForgeryToken]
