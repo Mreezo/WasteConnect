@@ -1,0 +1,360 @@
+﻿@model WasteConnect.Models.ApplicationUser
+
+@{
+    ViewData["Title"] = "Councillor Dashboard";
+}
+
+<div class="councillor-dashboard">
+
+    <div class="dashboard-header">
+        <div>
+            <span class="dashboard-label">
+                WasteConnect Councillor Portal
+            </span>
+
+            <h1>
+                Welcome, @Model.FullName
+            </h1>
+
+            <p>
+                Manage environmental reports and service delivery
+                matters assigned to your ward.
+            </p>
+        </div>
+
+        <div class="ward-card">
+            <span>Assigned Ward</span>
+
+            <strong>
+                Ward @(Model.WardNumber?.ToString() ?? "Not assigned")
+            </strong>
+        </div>
+    </div>
+
+    <div class="dashboard-summary">
+
+        <div class="summary-card">
+            <div class="summary-icon">📋</div>
+
+            <div>
+                <span>Total Reports</span>
+                <h2>0</h2>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-icon">⏳</div>
+
+            <div>
+                <span>Pending Reports</span>
+                <h2>0</h2>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-icon">🚛</div>
+
+            <div>
+                <span>In Progress</span>
+                <h2>0</h2>
+            </div>
+        </div>
+
+        <div class="summary-card">
+            <div class="summary-icon">✓</div>
+
+            <div>
+                <span>Completed Reports</span>
+                <h2>0</h2>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="dashboard-content">
+
+        <div class="content-card">
+            <div class="card-heading">
+                <div>
+                    <h3>Ward Reports</h3>
+
+                    <p>
+                        Reports submitted by residents in your assigned ward
+                        will appear here.
+                    </p>
+                </div>
+            </div>
+
+            <div class="empty-state">
+                <div class="empty-icon">📍</div>
+
+                <h4>No ward reports yet</h4>
+
+                <p>
+                    Once resident reports are linked to ward numbers,
+                    reports for Ward @Model.WardNumber will appear here.
+                </p>
+            </div>
+        </div>
+
+        <div class="profile-card">
+            <h3>Councillor Details</h3>
+
+            <div class="detail-row">
+                <span>Full name</span>
+                <strong>@Model.FullName</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Email address</span>
+                <strong>@Model.Email</strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Position</span>
+                <strong>
+                    @(Model.PositionTitle ?? "Ward Councillor")
+                </strong>
+            </div>
+
+            <div class="detail-row">
+                <span>Ward</span>
+                <strong>
+                    Ward @(Model.WardNumber?.ToString() ?? "Not assigned")
+                </strong>
+            </div>
+
+            <div class="account-status">
+                <span class="status-dot"></span>
+                Account active
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    .councillor-dashboard {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 35px;
+        color: #102a43;
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 25px;
+        padding: 36px;
+        border-radius: 22px;
+        background: linear-gradient(135deg, #0f4c81, #1f8f4d);
+        color: #ffffff;
+        box-shadow: 0 18px 40px rgba(15, 76, 129, 0.18);
+    }
+
+    .dashboard-label {
+        display: inline-block;
+        margin-bottom: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        opacity: 0.85;
+    }
+
+    .dashboard-header h1 {
+        margin: 0 0 10px;
+        font-size: 34px;
+        font-weight: 750;
+    }
+
+    .dashboard-header p {
+        max-width: 680px;
+        margin: 0;
+        line-height: 1.6;
+        opacity: 0.9;
+    }
+
+    .ward-card {
+        min-width: 210px;
+        padding: 22px 28px;
+        border: 1px solid rgba(255, 255, 255, 0.25);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.12);
+        text-align: center;
+        backdrop-filter: blur(8px);
+    }
+
+    .ward-card span {
+        display: block;
+        margin-bottom: 7px;
+        font-size: 13px;
+        opacity: 0.85;
+    }
+
+    .ward-card strong {
+        font-size: 24px;
+    }
+
+    .dashboard-summary {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 20px;
+        margin: 25px 0;
+    }
+
+    .summary-card {
+        display: flex;
+        align-items: center;
+        gap: 17px;
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        border-radius: 18px;
+        background: #ffffff;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+    }
+
+    .summary-icon {
+        width: 54px;
+        height: 54px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 15px;
+        background: #eaf7ef;
+        font-size: 25px;
+    }
+
+    .summary-card span {
+        display: block;
+        margin-bottom: 6px;
+        color: #64748b;
+        font-size: 14px;
+    }
+
+    .summary-card h2 {
+        margin: 0;
+        font-size: 28px;
+    }
+
+    .dashboard-content {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
+        gap: 24px;
+    }
+
+    .content-card,
+    .profile-card {
+        padding: 28px;
+        border: 1px solid #e2e8f0;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+    }
+
+    .card-heading h3,
+    .profile-card h3 {
+        margin: 0 0 8px;
+        font-size: 21px;
+    }
+
+    .card-heading p {
+        margin: 0;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .empty-state {
+        padding: 70px 20px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        margin-bottom: 14px;
+        font-size: 46px;
+    }
+
+    .empty-state h4 {
+        margin: 0 0 8px;
+        font-size: 19px;
+    }
+
+    .empty-state p {
+        max-width: 500px;
+        margin: 0 auto;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .detail-row {
+        padding: 17px 0;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .detail-row span {
+        display: block;
+        margin-bottom: 5px;
+        color: #64748b;
+        font-size: 13px;
+    }
+
+    .detail-row strong {
+        overflow-wrap: anywhere;
+        font-size: 15px;
+    }
+
+    .account-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 22px;
+        padding: 13px;
+        border-radius: 10px;
+        background: #eaf7ef;
+        color: #16733d;
+        font-weight: 650;
+    }
+
+    .status-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        background: #1f8f4d;
+    }
+
+    @@media (max-width: 1050px) {
+        .dashboard-summary {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .dashboard-content {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @@media (max-width: 700px) {
+        .councillor-dashboard {
+            padding: 18px;
+        }
+
+        .dashboard-header {
+            align-items: stretch;
+            flex-direction: column;
+            padding: 26px;
+        }
+
+        .dashboard-header h1 {
+            font-size: 27px;
+        }
+
+        .ward-card {
+            width: 100%;
+        }
+
+        .dashboard-summary {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>

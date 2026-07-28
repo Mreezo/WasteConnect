@@ -40,7 +40,9 @@ namespace WasteConnect.Controllers
         public async Task<IActionResult> Login(LoginViewModel model)
         {
             if (!ModelState.IsValid)
+            {
                 return View(model);
+            }
 
             ApplicationUser? user =
                 await _userManager.FindByEmailAsync(model.EmailOrPhone);
@@ -53,7 +55,22 @@ namespace WasteConnect.Controllers
 
             if (user == null)
             {
-                ModelState.AddModelError("", "Invalid email/phone number or password.");
+                ModelState.AddModelError(
+                    "",
+                    "Invalid email/phone number or password.");
+
+                return View(model);
+            }
+
+            var isCouncillor =
+                await _userManager.IsInRoleAsync(user, "Councillor");
+
+            if (isCouncillor && !user.IsAccountActive)
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Your councillor account has not been activated yet.");
+
                 return View(model);
             }
 
@@ -65,36 +82,49 @@ namespace WasteConnect.Controllers
 
             if (!result.Succeeded)
             {
-                ModelState.AddModelError("", "Invalid email/phone number or password.");
+                ModelState.AddModelError(
+                    "",
+                    "Invalid email/phone number or password.");
+
                 return View(model);
             }
 
             if (await _userManager.IsInRoleAsync(user, "Admin"))
             {
-                return RedirectToAction("Dashboard", "Admin");
+                return RedirectToAction(
+                    "Dashboard",
+                    "Admin");
+            }
+
+            if (isCouncillor)
+            {
+                return RedirectToAction(
+                    "Dashboard",
+                    "Councillor");
             }
 
             if (await _userManager.IsInRoleAsync(user, "Company"))
             {
-                return RedirectToAction("Dashboard", "Company");
-            }
-
-            if (await _userManager.IsInRoleAsync(user, "Councillor"))
-            {
-                return RedirectToAction("Dashboard", "Councillor");
+                return RedirectToAction(
+                    "Dashboard",
+                    "Company");
             }
 
             if (await _userManager.IsInRoleAsync(user, "User"))
             {
-                return RedirectToAction("Dashboard", "User");
+                return RedirectToAction(
+                    "Dashboard",
+                    "User");
             }
 
             await _signInManager.SignOutAsync();
 
-            ModelState.AddModelError("", "Your account does not have a valid role.");
+            ModelState.AddModelError(
+                "",
+                "Your account does not have a valid role.");
+
             return View(model);
         }
-
 
         // REGISTER
 
