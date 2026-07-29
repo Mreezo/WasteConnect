@@ -27,5 +27,6 @@ namespace WasteConnect.ViewModels
 
         public string DumpLongitude { get; set; }
 
+        public int? WardNumber { get; set; }
     }
 }
