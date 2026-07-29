@@ -16,6 +16,7 @@ namespace WasteConnect.Controllers
         private readonly ReportCosmosService _reportService;
         private readonly IConfiguration _configuration;
         private readonly TwilioOtpService _twilioOtpService;
+        private readonly IWardLookupService _wardLookupService;
 
 
         public UserController(
@@ -23,13 +24,15 @@ namespace WasteConnect.Controllers
             BlobService blobService,
             ReportCosmosService reportService,
             IConfiguration configuration,
-             TwilioOtpService twilioOtpService)
+             TwilioOtpService twilioOtpService,
+             IWardLookupService wardLookupService)
         {
             _userManager = userManager;
             _blobService = blobService;
             _reportService = reportService;
             _configuration = configuration;
             _twilioOtpService = twilioOtpService;
+            _wardLookupService = wardLookupService;
         }
 
         private double CalculateDistanceMeters( double lat1,double lon1,double lat2,double lon2)
@@ -234,6 +237,25 @@ namespace WasteConnect.Controllers
                 model.DumpLongitude.Replace(",", "."),
                 CultureInfo.InvariantCulture);
 
+            // Determine the ward from the GPS coordinates
+            var wardNumber = await _wardLookupService.FindWardNumberAsync(
+                dumpLat,
+                dumpLng);
+
+            if (wardNumber == null)
+            {
+                TempData["Error"] =
+                    "The selected location is outside the Msunduzi Municipality.";
+
+                return RedirectToAction(nameof(ReportDumping));
+            }
+
+            // Find the active councillor responsible for this ward
+            var assignedCouncillor =
+                _userManager.Users.FirstOrDefault(user =>
+                    user.WardNumber == wardNumber &&
+                    user.IsAccountActive);
+
             var openReports =
                 await _reportService.GetOpenMasterReportsAsync();
 
@@ -287,6 +309,24 @@ namespace WasteConnect.Controllers
                     DumpLatitude = dumpLat,
                     DumpLongitude = dumpLng,
 
+                    WardNumber = duplicateReport.WardNumber ?? wardNumber,
+
+                                    AssignedCouncillorId =
+                    duplicateReport.AssignedCouncillorId
+                    ?? assignedCouncillor?.Id,
+
+                                    AssignedCouncillorName =
+                    duplicateReport.AssignedCouncillorName
+                    ?? assignedCouncillor?.FullName,
+
+                                    RoutingStatus =
+                    !string.IsNullOrWhiteSpace(duplicateReport.RoutingStatus) &&
+                    duplicateReport.RoutingStatus != "Pending"
+                        ? duplicateReport.RoutingStatus
+                        : assignedCouncillor != null
+                            ? "AssignedToCouncillor"
+                            : "RoutingRequired",
+
                     DuplicateCount = duplicateReport.DuplicateCount,
                     Priority = duplicateReport.Priority,
                     LastReportedAt = duplicateReport.LastReportedAt,
@@ -323,6 +363,16 @@ namespace WasteConnect.Controllers
                 DumpLatitude = dumpLat,
                 DumpLongitude = dumpLng,
 
+                WardNumber = wardNumber,
+
+                AssignedCouncillorId = assignedCouncillor?.Id,
+
+                AssignedCouncillorName = assignedCouncillor?.FullName,
+
+                RoutingStatus = assignedCouncillor != null
+                ? "AssignedToCouncillor"
+                : "RoutingRequired",
+
                 DuplicateCount = 1,
                 Priority = "Low",
                 LastReportedAt = DateTime.UtcNow,
@@ -336,7 +386,9 @@ namespace WasteConnect.Controllers
             await _reportService.AddReportAsync(report);
 
             TempData["ReportMessage"] =
-                "Illegal dumping report submitted successfully.";
+             assignedCouncillor != null
+         ? $"Illegal dumping report submitted successfully and routed to Ward {wardNumber}."
+         : $"Illegal dumping report submitted successfully for Ward {wardNumber}, but no active councillor is currently assigned.";
 
             return RedirectToAction(nameof(MyReports));
         }
@@ -522,6 +574,31 @@ namespace WasteConnect.Controllers
             {
                 success = true,
                 message = "OTP verified successfully."
+            });
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetWardNumber(
+        double latitude,
+        double longitude)
+        {
+            var wardNumber =
+                await _wardLookupService.FindWardNumberAsync(
+                    latitude,
+                    longitude);
+
+            if (wardNumber == null)
+            {
+                return Json(new
+                {
+                    success = false
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                wardNumber
             });
         }
     }
