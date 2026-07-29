@@ -74,6 +74,23 @@
                     <input asp-for="City" value="Pietermaritzburg" readonly />
                 </div>
 
+                <div class="form-box">
+                    <label>Ward Number</label>
+
+                    <input type="text"
+                           id="WardNumberDisplay"
+                           readonly
+                           placeholder="Automatically detected" />
+
+                    <input asp-for="WardNumber"
+                           type="hidden"
+                           id="WardNumber" />
+
+                    <small class="text-success">
+                        Ward number is automatically identified from the selected location.
+                    </small>
+                </div>
+
             </div>
 
             <div class="upload-section">
@@ -371,7 +388,46 @@
 
             document.getElementById("mapSelectedMessage").innerText =
                 `${message} Coordinates: ${cleanLat}, ${cleanLng}`;
+
+                    loadWardNumber(cleanLat, cleanLng);
         }
+
+                           async function loadWardNumber(latitude, longitude) {
+                const wardDisplay =
+                    document.getElementById("WardNumberDisplay");
+
+                const wardHidden =
+                    document.getElementById("WardNumber");
+
+                wardDisplay.value = "Identifying ward...";
+                wardHidden.value = "";
+
+                try {
+                    const response = await fetch(
+                        `/User/GetWardNumber?latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`
+                    );
+
+                    if (!response.ok) {
+                        throw new Error(`Ward request failed: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        wardDisplay.value = `Ward ${result.wardNumber}`;
+                        wardHidden.value = result.wardNumber;
+                    } else {
+                        wardDisplay.value = "Outside Msunduzi Municipality";
+                        wardHidden.value = "";
+                    }
+                }
+                catch (error) {
+                    console.error("Ward lookup error:", error);
+
+                    wardDisplay.value = "Unable to identify ward";
+                    wardHidden.value = "";
+                }
+            }
 
         function setupReportOtp() {
             const reportForm = document.getElementById("reportForm");
