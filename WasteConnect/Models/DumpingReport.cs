@@ -48,7 +48,18 @@ namespace WasteConnect.Models
 
         public double DumpLatitude { get; set; }
         public double DumpLongitude { get; set; }
-       
+
+        // GIS Information
+        public int? WardNumber { get; set; }
+
+        // Councillor Assignment
+        public string? AssignedCouncillorId { get; set; }
+
+        public string? AssignedCouncillorName { get; set; }
+
+        // Routing Status
+        public string RoutingStatus { get; set; } = "Pending";
+
         public string? AfterCleanupImageUrl { get; set; }
 
         public string? CompletionNotes { get; set; }
