@@ -34,6 +34,10 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TwilioOtpService>();
 
+builder.Services.AddSingleton<
+    IWardLookupService,
+    WardLookupService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
