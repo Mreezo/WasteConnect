@@ -65,6 +65,29 @@ namespace WasteConnect.Services
             return reports;
         }
 
+        public async Task<List<DumpingReport>> GetReportsByWardAsync(int wardNumber)
+        {
+            var query = new QueryDefinition(
+                "SELECT * FROM c " +
+                "WHERE c.IsMasterReport = true " +
+                "AND c.WardNumber = @wardNumber " +
+                "ORDER BY c.CreatedAt DESC")
+                .WithParameter("@wardNumber", wardNumber);
+
+            var iterator =
+                _container.GetItemQueryIterator<DumpingReport>(query);
+
+            var reports = new List<DumpingReport>();
+
+            while (iterator.HasMoreResults)
+            {
+                var response = await iterator.ReadNextAsync();
+                reports.AddRange(response);
+            }
+
+            return reports;
+        }
+
         public async Task<DumpingReport?> GetReportByIdAsync(string id, string userId)
         {
             try
