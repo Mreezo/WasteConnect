@@ -411,19 +411,19 @@
 
                                         <span class="priority-badge @priorityValue">
                                             @(string.IsNullOrWhiteSpace(report.Priority)
-                                                                                ? "Low"
-                                                                                : report.Priority)
-                                                                                              </span>
+                                                                      ? "Low"
+                                                                      : report.Priority)
+                                        </span>                                                     
 
                                     </td>
 
                                     <td>
 
-                                        <span class="resident-report-count">
-                                            @(report.DuplicateCount > 0
-                                                                                ? report.DuplicateCount
-                                                                                : 1)
-                                                                                </span>
+                                           <span class="resident-report-count">
+                                               @(report.DuplicateCount > 0
+                                                    ? report.DuplicateCount
+                                                             : 1)
+                                           </span>
 
                                     </td>
 
@@ -431,30 +431,30 @@
 
                                         <span class="status-badge @statusValue">
                                             @(string.IsNullOrWhiteSpace(report.Status)
-                                                                                ? "Pending"
-                                                                                : report.Status)
-                                </span>
+                                                    ? "Pending"
+                                                    : report.Status)
+                                       </span>
 
                                     </td>
 
                                     <td>
-
                                         <div class="report-date-cell">
+                                               <strong>
 
-                                            <strong>
-                                                @report.CreatedAt
-                                                .ToLocalTime()
-                                                .ToString("dd MMM yyyy")
-                                            </strong>
+                                                    @(report.CreatedAt
+                                                     .ToLocalTime()
+                                                     .ToString("dd MMM yyyy"))
 
-                                            <span>
-                                                @report.CreatedAt
-                                                .ToLocalTime()
-                                                .ToString("HH:mm")
-                                            </span>
+                                               </strong>
 
+                                              <span>
+
+                                                @(report.CreatedAt
+                                                   .ToLocalTime()
+                                                   .ToString("HH:mm")) SAST
+
+                                              </span>
                                         </div>
-
                                     </td>
 
                                     <td>
@@ -470,7 +470,7 @@
                                     </td>
 
                                 </tr>
-                                                }
+                            }
 
                         </tbody>
 
@@ -494,10 +494,10 @@
 
                 <div class="profile-avatar">
                     @(
-                                        string.IsNullOrWhiteSpace(Model.CouncillorName)
-                                        ? "C"
-                                        : Model.CouncillorName.Substring(0, 1).ToUpper()
-                                        )
+                      string.IsNullOrWhiteSpace(Model.CouncillorName)
+                        ? "C"
+                        : Model.CouncillorName.Substring(0, 1).ToUpper()
+                      )
                 </div>
 
                 <div>
