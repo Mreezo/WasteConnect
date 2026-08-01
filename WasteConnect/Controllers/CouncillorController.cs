@@ -13,13 +13,16 @@ namespace WasteConnect.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ReportCosmosService _reportCosmosService;
+        private readonly IConfiguration _configuration;
 
         public CouncillorController(
             UserManager<ApplicationUser> userManager,
-            ReportCosmosService reportCosmosService)
+            ReportCosmosService reportCosmosService,
+            IConfiguration configuration)
         {
             _userManager = userManager;
             _reportCosmosService = reportCosmosService;
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -55,7 +58,11 @@ namespace WasteConnect.Controllers
                 var emptyViewModel = new CouncillorDashboardViewModel
                 {
                     CouncillorName = councillor.FullName,
-                    WardNumber = 0
+                    Email = councillor.Email ?? string.Empty,
+                    PositionTitle =
+                        councillor.PositionTitle ?? "Ward Councillor",
+                    WardNumber = 0,
+                    Reports = new List<DumpingReport>()
                 };
 
                 return View(emptyViewModel);
@@ -74,15 +81,81 @@ namespace WasteConnect.Controllers
                 Reports = reports
             };
 
-            return View(new CouncillorDashboardViewModel
+            return View(viewModel);
+
+
+
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ReportDetails(
+            string id,
+            string userId)
+        {
+            if (string.IsNullOrWhiteSpace(id) ||
+                string.IsNullOrWhiteSpace(userId))
             {
-                CouncillorName = councillor.FullName,
-                Email = councillor.Email ?? string.Empty,
-                PositionTitle = councillor.PositionTitle ?? "Ward Councillor",
-                WardNumber = 0
-            });
+                return NotFound();
+            }
 
+            var councillor =
+                await _userManager.GetUserAsync(User);
 
+            if (councillor == null)
+            {
+                return RedirectToAction(
+                    "Login",
+                    "Account");
+            }
+
+            if (!councillor.IsAccountActive)
+            {
+                await HttpContext.SignOutAsync(
+                    IdentityConstants.ApplicationScheme);
+
+                TempData["LoginError"] =
+                    "Your councillor account is not active.";
+
+                return RedirectToAction(
+                    "Login",
+                    "Account");
+            }
+
+            if (!councillor.WardNumber.HasValue)
+            {
+                TempData["Error"] =
+                    "Your councillor account is not linked to a ward.";
+
+                return RedirectToAction(nameof(Dashboard));
+            }
+
+            var report =
+                await _reportCosmosService.GetReportByIdAsync(
+                    id,
+                    userId);
+
+            if (report == null)
+            {
+                return NotFound();
+            }
+
+            // Security check:
+            // Councillors can only view reports in their own ward.
+            if (report.WardNumber != councillor.WardNumber.Value)
+            {
+                return Forbid();
+            }
+
+            // Only show master reports on the councillor portal.
+            if (!report.IsMasterReport)
+            {
+                return NotFound();
+            }
+
+            ViewBag.AzureMapsKey =
+                _configuration["AzureMaps:SubscriptionKey"];
+
+            return View(report);
         }
     }
 }
