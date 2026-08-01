@@ -1,360 +1,619 @@
 ﻿@model WasteConnect.ViewModels.CouncillorDashboardViewModel
 
 @{
+    Layout = "_DashboardLayout";
     ViewData["Title"] = "Councillor Dashboard";
+
+    var totalReports = Model.Reports.Count;
+
+    var pendingReports = Model.Reports.Count(report =>
+        string.Equals(
+            report.Status,
+            "Pending",
+            StringComparison.OrdinalIgnoreCase));
+
+    var assignedReports = Model.Reports.Count(report =>
+        string.Equals(
+            report.Status,
+            "Assigned",
+            StringComparison.OrdinalIgnoreCase));
+
+    var inProgressReports = Model.Reports.Count(report =>
+        string.Equals(
+            report.Status,
+            "In Progress",
+            StringComparison.OrdinalIgnoreCase)
+        ||
+        string.Equals(
+            report.Status,
+            "InProgress",
+            StringComparison.OrdinalIgnoreCase));
+
+    var completedReports = Model.Reports.Count(report =>
+        string.Equals(
+            report.Status,
+            "Cleaned",
+            StringComparison.OrdinalIgnoreCase)
+        ||
+        string.Equals(
+            report.Status,
+            "Completed",
+            StringComparison.OrdinalIgnoreCase));
+
+    var highPriorityReports = Model.Reports.Count(report =>
+        string.Equals(
+            report.Priority,
+            "High",
+            StringComparison.OrdinalIgnoreCase));
+
+    var totalResidentsReporting = Model.Reports.Sum(report =>
+        report.DuplicateCount > 0
+            ? report.DuplicateCount
+            : 1);
 }
 
-<div class="councillor-dashboard">
+<link rel="stylesheet"
+      href="~/css/councillor.css"
+      asp-append-version="true" />
 
-    <div class="dashboard-header">
-        <div>
-            <span class="dashboard-label">
+<div class="councillor-page">
+
+    <section class="councillor-hero">
+
+        <div class="hero-content">
+
+            <span class="hero-label">
                 WasteConnect Councillor Portal
             </span>
 
             <h1>
-                Welcome, @Model.FullName
+                Welcome, @Model.CouncillorName
             </h1>
 
             <p>
-                Manage environmental reports and service delivery
-                matters assigned to your ward.
+                Monitor illegal-dumping reports, community concerns,
+                cleanup progress and service-delivery activity in your ward.
             </p>
+
         </div>
 
-        <div class="ward-card">
-            <span>Assigned Ward</span>
+        <div class="hero-ward-card">
+
+            <span>
+                Assigned Ward
+            </span>
 
             <strong>
-                Ward @(Model.WardNumber?.ToString() ?? "Not assigned")
+                @(Model.WardNumber > 0
+                                ? $"Ward {Model.WardNumber}"
+                                : "Not Assigned")
             </strong>
+
+            <small>
+                Official municipal ward
+            </small>
+
         </div>
-    </div>
 
-    <div class="dashboard-summary">
+    </section>
 
-        <div class="summary-card">
-            <div class="summary-icon">📋</div>
+    @if (TempData["Error"] != null)
+    {
+        <div class="dashboard-alert dashboard-alert-error">
+            @TempData["Error"]
+        </div>
+    }
 
-            <div>
-                <span>Total Reports</span>
-                <h2>0</h2>
+    <section class="dashboard-stat-grid">
+
+        <article class="dashboard-stat-card">
+
+            <div class="stat-icon">
+                📋
             </div>
-        </div>
 
-        <div class="summary-card">
-            <div class="summary-icon">⏳</div>
+            <div class="stat-content">
 
-            <div>
-                <span>Pending Reports</span>
-                <h2>0</h2>
+                <span>
+                    Total Reports
+                </span>
+
+                <strong>
+                    @totalReports
+                </strong>
+
+                <small>
+                    All reports in Ward @Model.WardNumber
+                </small>
+
             </div>
-        </div>
 
-        <div class="summary-card">
-            <div class="summary-icon">🚛</div>
+        </article>
 
-            <div>
-                <span>In Progress</span>
-                <h2>0</h2>
+        <article class="dashboard-stat-card">
+
+            <div class="stat-icon">
+                ⏳
             </div>
-        </div>
 
-        <div class="summary-card">
-            <div class="summary-icon">✓</div>
+            <div class="stat-content">
 
-            <div>
-                <span>Completed Reports</span>
-                <h2>0</h2>
+                <span>
+                    Pending
+                </span>
+
+                <strong>
+                    @pendingReports
+                </strong>
+
+                <small>
+                    Awaiting municipal action
+                </small>
+
             </div>
-        </div>
 
-    </div>
+        </article>
 
-    <div class="dashboard-content">
+        <article class="dashboard-stat-card">
 
-        <div class="content-card">
-            <div class="card-heading">
+            <div class="stat-icon">
+                🚛
+            </div>
+
+            <div class="stat-content">
+
+                <span>
+                    Active Cleanups
+                </span>
+
+                <strong>
+                    @(assignedReports + inProgressReports)
+                </strong>
+
+                <small>
+                    Assigned or in progress
+                </small>
+
+            </div>
+
+        </article>
+
+        <article class="dashboard-stat-card">
+
+            <div class="stat-icon">
+                ✓
+            </div>
+
+            <div class="stat-content">
+
+                <span>
+                    Completed
+                </span>
+
+                <strong>
+                    @completedReports
+                </strong>
+
+                <small>
+                    Cleaned dumping sites
+                </small>
+
+            </div>
+
+        </article>
+
+        <article class="dashboard-stat-card">
+
+            <div class="stat-icon">
+                ⚠️
+            </div>
+
+            <div class="stat-content">
+
+                <span>
+                    High Priority
+                </span>
+
+                <strong>
+                    @highPriorityReports
+                </strong>
+
+                <small>
+                    Areas needing urgent attention
+                </small>
+
+            </div>
+
+        </article>
+
+        <article class="dashboard-stat-card">
+
+            <div class="stat-icon">
+                👥
+            </div>
+
+            <div class="stat-content">
+
+                <span>
+                    Residents Reporting
+                </span>
+
+                <strong>
+                    @totalResidentsReporting
+                </strong>
+
+                <small>
+                    Community reports received
+                </small>
+
+            </div>
+
+        </article>
+
+    </section>
+
+    <section class="dashboard-main-grid">
+
+        <div class="ward-reports-card">
+
+            <div class="section-heading">
+
                 <div>
-                    <h3>Ward Reports</h3>
+
+                    <span class="section-label">
+                        Ward Monitoring
+                    </span>
+
+                    <h2>
+                        Ward Reports
+                    </h2>
 
                     <p>
-                        Reports submitted by residents in your assigned ward
-                        will appear here.
+                        Reports identified as belonging to Ward
+                        @Model.WardNumber appear automatically below.
                     </p>
+
                 </div>
+
+                <div class="report-filter-group">
+
+                    <button type="button"
+                            class="report-filter active"
+                            data-filter="all">
+                        All
+                    </button>
+
+                    <button type="button"
+                            class="report-filter"
+                            data-filter="pending">
+                        Pending
+                    </button>
+
+                    <button type="button"
+                            class="report-filter"
+                            data-filter="assigned">
+                        Assigned
+                    </button>
+
+                    <button type="button"
+                            class="report-filter"
+                            data-filter="in-progress">
+                        In Progress
+                    </button>
+
+                    <button type="button"
+                            class="report-filter"
+                            data-filter="cleaned">
+                        Cleaned
+                    </button>
+
+                    <button type="button"
+                            class="report-filter"
+                            data-filter="high">
+                        High Priority
+                    </button>
+
+                </div>
+
             </div>
 
-            <div class="empty-state">
-                <div class="empty-icon">📍</div>
+            @if (Model.WardNumber <= 0)
+            {
+                <div class="dashboard-empty-state">
 
-                <h4>No ward reports yet</h4>
+                    <div class="empty-state-icon">
+                        ⚠️
+                    </div>
 
-                <p>
-                    Once resident reports are linked to ward numbers,
-                    reports for Ward @Model.WardNumber will appear here.
-                </p>
-            </div>
+                    <h3>
+                        No ward assigned
+                    </h3>
+
+                    <p>
+                        Your account has not yet been linked to a municipal
+                        ward. Please contact the WasteConnect administrator.
+                    </p>
+
+                </div>
+            }
+            else if (!Model.Reports.Any())
+            {
+                <div class="dashboard-empty-state">
+
+                    <div class="empty-state-icon">
+                        📍
+                    </div>
+
+                    <h3>
+                        No reports in Ward @Model.WardNumber
+                    </h3>
+
+                    <p>
+                        New illegal-dumping reports identified in your ward
+                        will automatically appear here.
+                    </p>
+
+                </div>
+            }
+            else
+            {
+                <div class="reports-table-container">
+
+                    <table class="reports-table">
+
+                        <thead>
+                            <tr>
+                                <th>Area</th>
+                                <th>Priority</th>
+                                <th>Residents Reporting</th>
+                                <th>Status</th>
+                                <th>Reported</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="wardReportsTable">
+
+                            @foreach (var report in Model.Reports)
+                            {
+                                var statusValue =
+                                (report.Status ?? "Pending")
+                                .Trim()
+                                .ToLowerInvariant()
+                                .Replace(" ", "-");
+
+                                var priorityValue =
+                                (report.Priority ?? "Low")
+                                .Trim()
+                                .ToLowerInvariant();
+
+                                <tr class="ward-report-row"
+                                    data-status="@statusValue"
+                                    data-priority="@priorityValue">
+
+                                    <td>
+
+                                        <div class="report-area-cell">
+
+                                            <strong>
+                                                @report.DumpingLocation
+                                            </strong>
+
+                                            <span>
+                                                Ward @report.WardNumber
+                                            </span>
+
+                                        </div>
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="priority-badge @priorityValue">
+                                            @(string.IsNullOrWhiteSpace(report.Priority)
+                                                                                ? "Low"
+                                                                                : report.Priority)
+                                                                                              </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="resident-report-count">
+                                            @(report.DuplicateCount > 0
+                                                                                ? report.DuplicateCount
+                                                                                : 1)
+                                                                                </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        <span class="status-badge @statusValue">
+                                            @(string.IsNullOrWhiteSpace(report.Status)
+                                                                                ? "Pending"
+                                                                                : report.Status)
+                                </span>
+
+                                    </td>
+
+                                    <td>
+
+                                        <div class="report-date-cell">
+
+                                            <strong>
+                                                @report.CreatedAt
+                                                .ToLocalTime()
+                                                .ToString("dd MMM yyyy")
+                                            </strong>
+
+                                            <span>
+                                                @report.CreatedAt
+                                                .ToLocalTime()
+                                                .ToString("HH:mm")
+                                            </span>
+
+                                        </div>
+
+                                    </td>
+
+                                    <td>
+
+                                        <a asp-controller="Councillor"
+                                           asp-action="ReportDetails"
+                                           asp-route-id="@report.Id"
+                                           asp-route-userId="@report.UserId"
+                                           class="view-report-button">
+                                            View Report
+                                        </a>
+
+                                    </td>
+
+                                </tr>
+                                                }
+
+                        </tbody>
+
+                    </table>
+
+                    <div id="filteredEmptyState"
+                         class="filtered-empty-state">
+
+                        No reports match the selected filter.
+
+                    </div>
+
+                </div>
+            }
+
         </div>
 
-        <div class="profile-card">
-            <h3>Councillor Details</h3>
+        <aside class="councillor-profile-card">
 
-            <div class="detail-row">
-                <span>Full name</span>
-                <strong>@Model.FullName</strong>
+            <div class="profile-card-header">
+
+                <div class="profile-avatar">
+                    @(
+                                        string.IsNullOrWhiteSpace(Model.CouncillorName)
+                                        ? "C"
+                                        : Model.CouncillorName.Substring(0, 1).ToUpper()
+                                        )
+                </div>
+
+                <div>
+
+                    <span>
+                        Councillor Profile
+                    </span>
+
+                    <h3>
+                        @Model.CouncillorName
+                    </h3>
+
+                </div>
+
             </div>
 
-            <div class="detail-row">
-                <span>Email address</span>
-                <strong>@Model.Email</strong>
+            <div class="profile-detail-list">
+
+                <div class="profile-detail-row">
+
+                    <span>
+                        Email
+                    </span>
+
+                    <strong>
+                        @Model.Email
+                    </strong>
+
+                </div>
+
+                <div class="profile-detail-row">
+
+                    <span>
+                        Position
+                    </span>
+
+                    <strong>
+                        @Model.PositionTitle
+                    </strong>
+
+                </div>
+
+                <div class="profile-detail-row">
+
+                    <span>
+                        Assigned Ward
+                    </span>
+
+                    <strong>
+                        @(Model.WardNumber > 0
+                                                ? $"Ward {Model.WardNumber}"
+                                                : "Not Assigned")
+                    </strong>
+
+                </div>
+
+                <div class="profile-detail-row">
+
+                    <span>
+                        Portal Access
+                    </span>
+
+                    <strong class="read-only-label">
+                        Read-only monitoring
+                    </strong>
+
+                </div>
+
             </div>
 
-            <div class="detail-row">
-                <span>Position</span>
-                <strong>
-                    @(Model.PositionTitle ?? "Ward Councillor")
-                </strong>
-            </div>
+            <div class="account-active-message">
 
-            <div class="detail-row">
-                <span>Ward</span>
-                <strong>
-                    Ward @(Model.WardNumber?.ToString() ?? "Not assigned")
-                </strong>
-            </div>
+                <span class="active-status-dot"></span>
 
-            <div class="account-status">
-                <span class="status-dot"></span>
                 Account active
-            </div>
-        </div>
 
-    </div>
+            </div>
+
+            <div class="profile-permissions">
+
+                <h4>
+                    Your permissions
+                </h4>
+
+                <div class="permission-item allowed">
+                    <span>✓</span>
+                    View ward reports
+                </div>
+
+                <div class="permission-item allowed">
+                    <span>✓</span>
+                    Monitor cleanup status
+                </div>
+
+                <div class="permission-item allowed">
+                    <span>✓</span>
+                    View priorities and photos
+                </div>
+
+                <div class="permission-item restricted">
+                    <span>×</span>
+                    Cannot change report status
+                </div>
+
+                <div class="permission-item restricted">
+                    <span>×</span>
+                    Cannot assign companies
+                </div>
+
+            </div>
+
+        </aside>
+
+    </section>
 
 </div>
 
-<style>
-    .councillor-dashboard {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 35px;
-        color: #102a43;
-    }
-
-    .dashboard-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 25px;
-        padding: 36px;
-        border-radius: 22px;
-        background: linear-gradient(135deg, #0f4c81, #1f8f4d);
-        color: #ffffff;
-        box-shadow: 0 18px 40px rgba(15, 76, 129, 0.18);
-    }
-
-    .dashboard-label {
-        display: inline-block;
-        margin-bottom: 10px;
-        font-size: 13px;
-        font-weight: 700;
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        opacity: 0.85;
-    }
-
-    .dashboard-header h1 {
-        margin: 0 0 10px;
-        font-size: 34px;
-        font-weight: 750;
-    }
-
-    .dashboard-header p {
-        max-width: 680px;
-        margin: 0;
-        line-height: 1.6;
-        opacity: 0.9;
-    }
-
-    .ward-card {
-        min-width: 210px;
-        padding: 22px 28px;
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        border-radius: 16px;
-        background: rgba(255, 255, 255, 0.12);
-        text-align: center;
-        backdrop-filter: blur(8px);
-    }
-
-    .ward-card span {
-        display: block;
-        margin-bottom: 7px;
-        font-size: 13px;
-        opacity: 0.85;
-    }
-
-    .ward-card strong {
-        font-size: 24px;
-    }
-
-    .dashboard-summary {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 20px;
-        margin: 25px 0;
-    }
-
-    .summary-card {
-        display: flex;
-        align-items: center;
-        gap: 17px;
-        padding: 24px;
-        border: 1px solid #e2e8f0;
-        border-radius: 18px;
-        background: #ffffff;
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
-    }
-
-    .summary-icon {
-        width: 54px;
-        height: 54px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border-radius: 15px;
-        background: #eaf7ef;
-        font-size: 25px;
-    }
-
-    .summary-card span {
-        display: block;
-        margin-bottom: 6px;
-        color: #64748b;
-        font-size: 14px;
-    }
-
-    .summary-card h2 {
-        margin: 0;
-        font-size: 28px;
-    }
-
-    .dashboard-content {
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
-        gap: 24px;
-    }
-
-    .content-card,
-    .profile-card {
-        padding: 28px;
-        border: 1px solid #e2e8f0;
-        border-radius: 20px;
-        background: #ffffff;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
-    }
-
-    .card-heading h3,
-    .profile-card h3 {
-        margin: 0 0 8px;
-        font-size: 21px;
-    }
-
-    .card-heading p {
-        margin: 0;
-        color: #64748b;
-        line-height: 1.6;
-    }
-
-    .empty-state {
-        padding: 70px 20px;
-        text-align: center;
-    }
-
-    .empty-icon {
-        margin-bottom: 14px;
-        font-size: 46px;
-    }
-
-    .empty-state h4 {
-        margin: 0 0 8px;
-        font-size: 19px;
-    }
-
-    .empty-state p {
-        max-width: 500px;
-        margin: 0 auto;
-        color: #64748b;
-        line-height: 1.6;
-    }
-
-    .detail-row {
-        padding: 17px 0;
-        border-bottom: 1px solid #eef2f7;
-    }
-
-    .detail-row span {
-        display: block;
-        margin-bottom: 5px;
-        color: #64748b;
-        font-size: 13px;
-    }
-
-    .detail-row strong {
-        overflow-wrap: anywhere;
-        font-size: 15px;
-    }
-
-    .account-status {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        margin-top: 22px;
-        padding: 13px;
-        border-radius: 10px;
-        background: #eaf7ef;
-        color: #16733d;
-        font-weight: 650;
-    }
-
-    .status-dot {
-        width: 9px;
-        height: 9px;
-        border-radius: 50%;
-        background: #1f8f4d;
-    }
-
-    @@media (max-width: 1050px) {
-        .dashboard-summary {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .dashboard-content {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @@media (max-width: 700px) {
-        .councillor-dashboard {
-            padding: 18px;
-        }
-
-        .dashboard-header {
-            align-items: stretch;
-            flex-direction: column;
-            padding: 26px;
-        }
-
-        .dashboard-header h1 {
-            font-size: 27px;
-        }
-
-        .ward-card {
-            width: 100%;
-        }
-
-        .dashboard-summary {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
+<script src="~/js/councillor.js"
+        asp-append-version="true"></script>

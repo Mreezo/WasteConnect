@@ -1,0 +1,503 @@
+﻿@using System.Globalization
+@model WasteConnect.Models.DumpingReport
+
+@{
+    Layout = "_DashboardLayout";
+    ViewData["Title"] = "Ward Report Details";
+
+    var residentsReporting =
+        Model.DuplicateCount > 0
+            ? Model.DuplicateCount
+            : 1;
+
+    var priorityClass =
+        string.IsNullOrWhiteSpace(Model.Priority)
+            ? "low"
+            : Model.Priority
+                .Trim()
+                .ToLowerInvariant();
+
+    var statusClass =
+        string.IsNullOrWhiteSpace(Model.Status)
+            ? "pending"
+            : Model.Status
+                .Trim()
+                .ToLowerInvariant()
+                .Replace(" ", "-");
+
+    var hasCoordinates =
+        Model.DumpLatitude != 0 &&
+        Model.DumpLongitude != 0;
+
+    var latitudeText = Model.DumpLatitude.ToString(
+        "0.########",
+        CultureInfo.InvariantCulture);
+
+    var longitudeText = Model.DumpLongitude.ToString(
+        "0.########",
+        CultureInfo.InvariantCulture);
+}
+
+<link rel="stylesheet"
+      href="~/css/councillor.css"
+      asp-append-version="true" />
+
+<link rel="stylesheet"
+      href="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.css" />
+
+<div class="councillor-page report-details-page">
+
+    <div class="report-details-toolbar">
+
+        <div>
+            <span class="section-label">
+                Ward Monitoring
+            </span>
+
+            <h1>
+                Illegal Dumping Report
+            </h1>
+
+            <p>
+                Read-only municipal report information for Ward
+                @Model.WardNumber.
+            </p>
+        </div>
+
+        <a asp-controller="Councillor"
+           asp-action="Dashboard"
+           class="back-dashboard-button">
+            Back to Dashboard
+        </a>
+
+    </div>
+
+    <section class="report-details-summary">
+
+        <article class="report-details-stat">
+            <span>Ward</span>
+            <strong>Ward @Model.WardNumber</strong>
+        </article>
+
+        <article class="report-details-stat">
+            <span>Priority</span>
+
+            <strong>
+                <span class="priority-badge @priorityClass">
+                    @(string.IsNullOrWhiteSpace(Model.Priority)
+                                        ? "Low"
+                                        : Model.Priority)
+                </span>
+            </strong>
+        </article>
+
+        <article class="report-details-stat">
+            <span>Residents Reporting</span>
+            <strong>@residentsReporting</strong>
+        </article>
+
+        <article class="report-details-stat">
+            <span>Status</span>
+
+            <strong>
+                <span class="status-badge @statusClass">
+                    @(string.IsNullOrWhiteSpace(Model.Status)
+                                        ? "Pending"
+                                        : Model.Status)
+                </span>
+            </strong>
+        </article>
+
+    </section>
+
+    <section class="report-details-grid">
+
+        <div class="report-details-main">
+
+            <article class="details-card">
+
+                <div class="details-card-heading">
+                    <div>
+                        <span class="section-label">
+                            Location
+                        </span>
+
+                        <h2>
+                            Dumping Area
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="report-information-grid">
+
+                    <div class="report-information-item full-width">
+                        <span>Address / Area</span>
+
+                        <strong>
+                            @Model.DumpingLocation
+                        </strong>
+                    </div>
+
+                    <div class="report-information-item">
+                        <span>City</span>
+
+                        <strong>
+                            @Model.City
+                        </strong>
+                    </div>
+
+                    <div class="report-information-item">
+                        <span>Ward Number</span>
+
+                        <strong>
+                            Ward @Model.WardNumber
+                        </strong>
+                    </div>
+
+                    <div class="report-information-item">
+                        <span>Latitude</span>
+
+                        <strong>
+                            @Model.DumpLatitude
+                        </strong>
+                    </div>
+
+                    <div class="report-information-item">
+                        <span>Longitude</span>
+
+                        <strong>
+                            @Model.DumpLongitude
+                        </strong>
+                    </div>
+
+                </div>
+
+                @if (hasCoordinates)
+                {
+                    <div id="councillorReportMap"
+                         class="councillor-report-map"
+                         data-latitude="@latitudeText"
+                         data-longitude="@longitudeText">
+                    </div>
+                }
+                else
+                {
+                    <div class="map-unavailable-message">
+                        Map coordinates are not available for this report.
+                    </div>
+                }
+
+            </article>
+
+            <article class="details-card">
+
+                <div class="details-card-heading">
+                    <div>
+                        <span class="section-label">
+                            Evidence
+                        </span>
+
+                        <h2>
+                            Resident Photo
+                        </h2>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl"
+                         alt="Illegal dumping site"
+                         class="report-evidence-image" />
+                }
+                else
+                {
+                    <div class="image-unavailable-message">
+                        No original photo is available for this report.
+                    </div>
+                }
+
+                @if (Model.AdditionalImageUrls != null &&
+                                Model.AdditionalImageUrls.Any())
+                {
+                    <div class="additional-images-section">
+
+                        <h3>
+                            Additional Resident Photos
+                        </h3>
+
+                        <div class="additional-images-grid">
+
+                            @foreach (var imageUrl in Model.AdditionalImageUrls)
+                            {
+                                <img src="@imageUrl"
+                                     alt="Additional dumping report evidence"
+                                     class="additional-report-image" />
+                            }
+
+                        </div>
+
+                    </div>
+                }
+
+            </article>
+
+            @if (!string.IsNullOrWhiteSpace(Model.AfterCleanupImageUrl))
+            {
+                <article class="details-card">
+
+                    <div class="details-card-heading">
+                        <div>
+                            <span class="section-label">
+                                Cleanup Result
+                            </span>
+
+                            <h2>
+                                After Cleanup
+                            </h2>
+                        </div>
+                    </div>
+
+                    <img src="@Model.AfterCleanupImageUrl"
+                         alt="Dumping site after cleanup"
+                         class="report-evidence-image" />
+
+                </article>
+            }
+
+        </div>
+
+        <aside class="report-details-sidebar">
+
+            <article class="details-card">
+
+                <div class="details-card-heading">
+                    <div>
+                        <span class="section-label">
+                            Report
+                        </span>
+
+                        <h2>
+                            Report Information
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="sidebar-detail-list">
+
+                    <div class="sidebar-detail-row">
+                        <span>Report ID</span>
+                        <strong>@Model.Id</strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>First Reported</span>
+
+                        <strong>
+                            @(Model.CreatedAt
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy"))
+                        </strong>
+
+                        <small class="detail-time">
+                            @(Model.CreatedAt
+                                                        .ToLocalTime()
+                                                        .ToString("HH:mm")) SAST
+                        </small>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Last Reported</span>
+
+                        <strong>
+                            @(Model.LastReportedAt
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy"))
+                        </strong>
+
+                        <small class="detail-time">
+                            @(Model.LastReportedAt
+                                                        .ToLocalTime()
+                                                        .ToString("HH:mm")) SAST
+                        </small>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Residents Reporting</span>
+                        <strong>@residentsReporting</strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Routing Status</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(Model.RoutingStatus)
+                                                        ? "Not available"
+                                                        : Model.RoutingStatus)
+                        </strong>
+                    </div>
+
+                </div>
+
+            </article>
+
+            <article class="details-card">
+
+                <div class="details-card-heading">
+                    <div>
+                        <span class="section-label">
+                            Cleanup
+                        </span>
+
+                        <h2>
+                            Company Assignment
+                        </h2>
+                    </div>
+                </div>
+
+                <div class="sidebar-detail-list">
+
+                    <div class="sidebar-detail-row">
+                        <span>Assigned Company</span>
+
+                        <strong>
+                            @(string.IsNullOrWhiteSpace(
+                                                        Model.AssignedCompanyName)
+                                                        ? "Not assigned yet"
+                                                        : Model.AssignedCompanyName)
+                        </strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Assigned On</span>
+
+                        <strong>
+                            @(Model.AssignedAt.HasValue
+                                                        ? Model.AssignedAt.Value
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy, HH:mm")
+                                                        : "Not assigned yet")
+                        </strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Cleanup Start Date</span>
+
+                        <strong>
+                            @(Model.CleanupStartDate.HasValue
+                                                        ? Model.CleanupStartDate.Value
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy")
+                                                        : "Not scheduled")
+                        </strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Cleanup Due Date</span>
+
+                        <strong>
+                            @(Model.CleanupDueDate.HasValue
+                                                        ? Model.CleanupDueDate.Value
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy")
+                                                        : "Not scheduled")
+                        </strong>
+                    </div>
+
+                    <div class="sidebar-detail-row">
+                        <span>Completed On</span>
+
+                        <strong>
+                            @(Model.CompletedAt.HasValue
+                                                        ? Model.CompletedAt.Value
+                                                        .ToLocalTime()
+                                                        .ToString("dd MMM yyyy, HH:mm")
+                                                        : "Not completed")
+                        </strong>
+                    </div>
+
+                </div>
+
+            </article>
+
+            @if (!string.IsNullOrWhiteSpace(Model.CleanupInstructions) ||
+                        !string.IsNullOrWhiteSpace(Model.CompletionNotes))
+            {
+                <article class="details-card">
+
+                    <div class="details-card-heading">
+                        <div>
+                            <span class="section-label">
+                                Notes
+                            </span>
+
+                            <h2>
+                                Municipal Updates
+                            </h2>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrWhiteSpace(
+                                    Model.CleanupInstructions))
+                    {
+                        <div class="report-note-box">
+
+                            <span>
+                                Cleanup Instructions
+                            </span>
+
+                            <p>
+                                @Model.CleanupInstructions
+                            </p>
+
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(
+                                    Model.CompletionNotes))
+                    {
+                        <div class="report-note-box">
+
+                            <span>
+                                Completion Notes
+                            </span>
+
+                            <p>
+                                @Model.CompletionNotes
+                            </p>
+
+                        </div>
+                    }
+
+                </article>
+            }
+
+            <div class="read-only-notice">
+
+                <strong>
+                    Read-only access
+                </strong>
+
+                <p>
+                    Councillors can monitor reports and cleanup progress,
+                    but cannot change status or assign companies.
+                </p>
+
+            </div>
+
+        </aside>
+
+    </section>
+
+</div>
+
+@section Scripts {
+    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+
+    <script>
+        window.councillorMapKey =
+            '@ViewBag.AzureMapsKey';
+    </script>
+
+    <script src="~/js/councillor-report-details.js"
+            asp-append-version="true"></script>
+}
