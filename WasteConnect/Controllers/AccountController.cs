@@ -146,52 +146,124 @@ namespace WasteConnect.Controllers
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
             if (!ModelState.IsValid)
-                return View(model);
-
-            if (model.Role != "User" && model.Role != "Company")
             {
-                ModelState.AddModelError("", "Please select a valid registration type.");
                 return View(model);
             }
 
-            var existingEmail = await _userManager.FindByEmailAsync(model.Email);
+            // Only residents and companies can register from this page.
+            if (model.Role != "User" && model.Role != "Company")
+            {
+                ModelState.AddModelError(
+                    "",
+                    "Please select a valid registration type.");
+
+                return View(model);
+            }
+
+            // Clean the email before validating/saving it.
+            var email = model.Email.Trim().ToLowerInvariant();
+
+            // ============================================
+            // RESIDENT EMAIL VALIDATION
+            // ============================================
+
+            if (model.Role == "User")
+            {
+                if (!email.EndsWith(
+                        "@gmail.com",
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.Email),
+                        "Residents must register using a Gmail address ending with @gmail.com.");
+
+                    return View(model);
+                }
+            }
+
+            // ============================================
+            // COMPANY EMAIL VALIDATION
+            // ============================================
+
+            if (model.Role == "Company")
+            {
+                if (!email.Contains("@"))
+                {
+                    ModelState.AddModelError(
+                        nameof(model.Email),
+                        "Please enter a valid company email address.");
+
+                    return View(model);
+                }
+            }
+
+            // ============================================
+            // CHECK IF EMAIL ALREADY EXISTS
+            // ============================================
+
+            var existingEmail =
+                await _userManager.FindByEmailAsync(email);
 
             if (existingEmail != null)
             {
-                ModelState.AddModelError("", "An account with this email already exists.");
+                ModelState.AddModelError(
+                    nameof(model.Email),
+                    "An account with this email already exists.");
+
                 return View(model);
             }
 
-            var existingPhone = _userManager.Users
-                .FirstOrDefault(u => u.PhoneNumber == model.PhoneNumber);
+            // ============================================
+            // CHECK IF PHONE NUMBER ALREADY EXISTS
+            // ============================================
+
+            var existingPhone =
+                _userManager.Users.FirstOrDefault(
+                    u => u.PhoneNumber == model.PhoneNumber);
 
             if (existingPhone != null)
             {
-                ModelState.AddModelError("", "An account with this phone number already exists.");
+                ModelState.AddModelError(
+                    nameof(model.PhoneNumber),
+                    "An account with this phone number already exists.");
+
                 return View(model);
             }
 
+            // ============================================
+            // CREATE ACCOUNT
+            // ============================================
+
             var user = new ApplicationUser
             {
-                FullName = model.FullName,
-                UserName = model.Email,
-                Email = model.Email,
+                FullName = model.FullName.Trim(),
+                UserName = email,
+                Email = email,
                 PhoneNumber = model.PhoneNumber
             };
 
-            var result = await _userManager.CreateAsync(user, model.Password);
+            var result =
+                await _userManager.CreateAsync(
+                    user,
+                    model.Password);
 
             if (result.Succeeded)
             {
-                await _userManager.AddToRoleAsync(user, model.Role);
+                await _userManager.AddToRoleAsync(
+                    user,
+                    model.Role);
 
-                TempData["RegisterSuccess"] = "Registration successful. You can now login.";
+                TempData["RegisterSuccess"] =
+                    "Registration successful. You can now login.";
+
                 return RedirectToAction(nameof(Register));
             }
 
             foreach (var error in result.Errors)
             {
-                ModelState.AddModelError("", error.Description);
+                ModelState.AddModelError(
+                    "",
+                    error.Description);
             }
 
             return View(model);
