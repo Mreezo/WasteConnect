@@ -5290,3 +5290,18 @@ iframe {
         transform: translateY(0);
     }
 }
+/* ERROR MESSAGE FOR BOUNDARY ADDRESS */
+
+.municipality-address-message {
+    margin-top: 7px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+    .municipality-address-message.error {
+        color: #dc2626;
+    }
+
+    .municipality-address-message.success {
+        color: #16803c;
+    }
