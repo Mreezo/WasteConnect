@@ -67,6 +67,8 @@
                     <input asp-for="DumpingLocation"
                            placeholder="Example: 25 Church Street, Scottsville" />
                     <span asp-validation-for="DumpingLocation" class="text-danger"></span>
+                    <div id="municipalityAddressMessage" class="municipality-address-message">
+                    </div>
                 </div>
 
                 <div class="form-box">
@@ -99,7 +101,10 @@
                     <h3>Upload Existing Photo</h3>
                     <p>Select a photo from your phone or computer.</p>
 
-                    <input asp-for="ImageFile" type="file" accept="image/*" />
+                    <input asp-for="ImageFile" type="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" />
+                    <small class="upload-help-text">
+                        Accepted: JPG, JPEG or PNG. Maximum file size: 6 MB.
+                    </small>
                 </div>
 
                 <div class="upload-card">
@@ -193,214 +198,306 @@
 
     </div>
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+        <partial name="_ValidationScriptsPartial" />
 
-    <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
+        <script src="https://atlas.microsoft.com/sdk/javascript/mapcontrol/3/atlas.min.js"></script>
 
-    <script>
-        let cameraStream;
-        let reportMap;
-        let dumpMarker;
-        let searchTimer;
+        <script>
+                    let cameraStream;
+                    let reportMap;
+                    let dumpMarker;
+                    let searchTimer;
 
-        function closeReportSuccessPopup() {
-            const popup = document.getElementById("reportSuccessPopup");
+                    let wardBoundarySource;
+                    let wardBoundarylayer;
+                    let wardBoundaryLoaded = false;
 
-            if (popup) {
-                popup.remove();
-            }
-        }
 
-        async function startCamera() {
-            const video = document.getElementById("camera");
+                    function closeReportSuccessPopup() {
+                        const popup = document.getElementById("reportSuccessPopup");
 
-            video.style.display = "block";
-            video.setAttribute("playsinline", true);
-            video.setAttribute("autoplay", true);
-            video.muted = true;
+                        if (popup) {
+                            popup.remove();
+                        }
+                    }
 
-            if (cameraStream) {
-                cameraStream.getTracks().forEach(track => track.stop());
-            }
+                    async function startCamera() {
+                        const video = document.getElementById("camera");
 
-            try {
-                cameraStream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: "environment"
-                    },
-                    audio: false
-                });
-            }
-            catch (error) {
-                console.log("Back camera failed. Trying default camera.", error);
+                        video.style.display = "block";
+                        video.setAttribute("playsinline", true);
+                        video.setAttribute("autoplay", true);
+                        video.muted = true;
 
-                try {
-                    cameraStream = await navigator.mediaDevices.getUserMedia({
-                        video: true,
-                        audio: false
+                        if (cameraStream) {
+                            cameraStream.getTracks().forEach(track => track.stop());
+                        }
+
+                        try {
+                            cameraStream = await navigator.mediaDevices.getUserMedia({
+                                video: {
+                                    facingMode: "environment"
+                                },
+                                audio: false
+                            });
+                        }
+                        catch (error) {
+                            console.log("Back camera failed. Trying default camera.", error);
+
+                            try {
+                                cameraStream = await navigator.mediaDevices.getUserMedia({
+                                    video: true,
+                                    audio: false
+                                });
+                            }
+                            catch (secondError) {
+                                console.log("Camera error:", secondError);
+                                alert("Camera could not open. Please allow camera permission and try again.");
+                                video.style.display = "none";
+                                return;
+                            }
+                        }
+
+                        video.srcObject = cameraStream;
+
+                        try {
+                            await video.play();
+                        }
+                        catch (playError) {
+                            console.log("Video play error:", playError);
+                        }
+                    }
+
+                    function capturePhoto() {
+                        const video = document.getElementById("camera");
+                        const canvas = document.getElementById("snapshot");
+                        const preview = document.getElementById("preview");
+                        const hiddenInput = document.getElementById("CapturedImageData");
+
+                        if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
+                            alert("Camera is not ready yet. Please open the camera and wait a moment.");
+                            return;
+                        }
+
+                        const context = canvas.getContext("2d");
+
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+
+                        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                        const imageData = canvas.toDataURL("image/png");
+
+                        hiddenInput.value = imageData;
+                        preview.src = imageData;
+                        preview.style.display = "block";
+
+                        cameraStream.getTracks().forEach(track => track.stop());
+                        cameraStream = null;
+
+                        video.srcObject = null;
+                        video.style.display = "none";
+                    }
+
+                    const azureKey = '@ViewBag.AzureMapsKey';
+
+                    document.addEventListener("DOMContentLoaded", function () {
+                        reportMap = new atlas.Map("reportMap", {
+                            center: [30.3920, -29.6006],
+                            zoom: 12,
+                            authOptions: {
+                                authType: "subscriptionKey",
+                                subscriptionKey: azureKey
+                            }
+                        });
+
+                        reportMap.events.add("ready", function () {
+                            reportMap.events.add("click", function (e) {
+                                const longitude = e.position[0];
+                                const latitude = e.position[1];
+
+                                setDumpLocation(latitude, longitude, "Dumping location selected from map.");
+                            });
+                        });
+
+                        const locationInput = document.getElementById("DumpingLocation");
+
+                        if (locationInput) {
+                            locationInput.addEventListener("input", function () {
+                                clearTimeout(searchTimer);
+
+                                searchTimer = setTimeout(() => {
+                                    searchAddressOnMap(locationInput.value);
+                                }, 1000);
+                            });
+                        }
+
+                        setupReportOtp();
                     });
-                }
-                catch (secondError) {
-                    console.log("Camera error:", secondError);
-                    alert("Camera could not open. Please allow camera permission and try again.");
-                    video.style.display = "none";
-                    return;
-                }
-            }
 
-            video.srcObject = cameraStream;
+                    async function searchAddressOnMap(addressText) {
+                        if (!addressText || addressText.trim().length < 4) {
+                            return;
+                        }
 
-            try {
-                await video.play();
-            }
-            catch (playError) {
-                console.log("Video play error:", playError);
-            }
-        }
+                        const fullAddress = `${addressText}, Pietermaritzburg, South Africa`;
 
-        function capturePhoto() {
-            const video = document.getElementById("camera");
-            const canvas = document.getElementById("snapshot");
-            const preview = document.getElementById("preview");
-            const hiddenInput = document.getElementById("CapturedImageData");
+                        document.getElementById("mapSelectedMessage").innerText =
+                            "Searching location on map...";
 
-            if (!cameraStream || video.videoWidth === 0 || video.videoHeight === 0) {
-                alert("Camera is not ready yet. Please open the camera and wait a moment.");
-                return;
-            }
+                        const searchUrl =
+                            `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureKey}&query=${encodeURIComponent(fullAddress)}`;
 
-            const context = canvas.getContext("2d");
+                        const response = await fetch(searchUrl);
+                        const data = await response.json();
 
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
+                        if (!data.results || data.results.length === 0) {
+                            document.getElementById("mapSelectedMessage").innerText =
+                                "Location not found. Try entering a clearer street name or nearby landmark.";
+                            return;
+                        }
 
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                        const result = data.results[0];
 
-            const imageData = canvas.toDataURL("image/png");
+                        setDumpLocation(
+                            result.position.lat,
+                            result.position.lon,
+                            result.address.freeformAddress
+                        );
+                    }
 
-            hiddenInput.value = imageData;
-            preview.src = imageData;
-            preview.style.display = "block";
+                    function setDumpLocation(latitude, longitude, message) {
+                        const latInput = document.getElementById("DumpLatitude");
+                        const lngInput = document.getElementById("DumpLongitude");
 
-            cameraStream.getTracks().forEach(track => track.stop());
-            cameraStream = null;
+                        const cleanLat = Number(latitude).toFixed(7).replace(",", ".");
+                        const cleanLng = Number(longitude).toFixed(7).replace(",", ".");
 
-            video.srcObject = null;
-            video.style.display = "none";
-        }
+                        latInput.value = cleanLat;
+                        lngInput.value = cleanLng;
 
-        const azureKey = '@ViewBag.AzureMapsKey';
+                        document.getElementById("debugLat").innerText = cleanLat;
+                        document.getElementById("debugLng").innerText = cleanLng;
 
-        document.addEventListener("DOMContentLoaded", function () {
-            reportMap = new atlas.Map("reportMap", {
-                center: [30.3920, -29.6006],
-                zoom: 12,
-                authOptions: {
-                    authType: "subscriptionKey",
-                    subscriptionKey: azureKey
-                }
-            });
+                        reportMap.setCamera({
+                            center: [Number(cleanLng), Number(cleanLat)],
+                            zoom: 16
+                        });
 
-            reportMap.events.add("ready", function () {
-                reportMap.events.add("click", function (e) {
-                    const longitude = e.position[0];
-                    const latitude = e.position[1];
+                        if (dumpMarker) {
+                            reportMap.markers.remove(dumpMarker);
+                        }
 
-                    setDumpLocation(latitude, longitude, "Dumping location selected from map.");
-                });
-            });
+                        dumpMarker = new atlas.HtmlMarker({
+                            color: "Green",
+                            text: "D",
+                            position: [Number(cleanLng), Number(cleanLat)]
+                        });
 
-            const locationInput = document.getElementById("DumpingLocation");
+                        reportMap.markers.add(dumpMarker);
 
-            if (locationInput) {
-                locationInput.addEventListener("input", function () {
-                    clearTimeout(searchTimer);
+                        document.getElementById("mapSelectedMessage").innerText =
+                            `${message} Coordinates: ${cleanLat}, ${cleanLng}`;
 
-                    searchTimer = setTimeout(() => {
-                        searchAddressOnMap(locationInput.value);
-                    }, 1000);
-                });
-            }
+                                loadWardNumber(cleanLat, cleanLng);
+                    }
 
-            setupReportOtp();
-        });
 
-        async function searchAddressOnMap(addressText) {
-            if (!addressText || addressText.trim().length < 4) {
-                return;
-            }
+                                async function showMsunduziBoundary() {
+                            try {
+                                if (!wardBoundaryLoaded) {
 
-            const fullAddress = `${addressText}, Pietermaritzburg, South Africa`;
+                                    const response =
+                                        await fetch("/User/GetMsunduziWardBoundaries");
 
-            document.getElementById("mapSelectedMessage").innerText =
-                "Searching location on map...";
+                                    if (!response.ok) {
+                                        throw new Error(
+                                            "Unable to load Msunduzi ward boundaries."
+                                        );
+                                    }
 
-            const searchUrl =
-                `https://atlas.microsoft.com/search/address/json?api-version=1.0&subscription-key=${azureKey}&query=${encodeURIComponent(fullAddress)}`;
+                                    const geoJson =
+                                        await response.json();
 
-            const response = await fetch(searchUrl);
-            const data = await response.json();
+                                    wardBoundarySource =
+                                        new atlas.source.DataSource();
 
-            if (!data.results || data.results.length === 0) {
-                document.getElementById("mapSelectedMessage").innerText =
-                    "Location not found. Try entering a clearer street name or nearby landmark.";
-                return;
-            }
+                                    reportMap.sources.add(
+                                        wardBoundarySource
+                                    );
 
-            const result = data.results[0];
+                                    wardBoundarySource.add(
+                                        geoJson
+                                    );
 
-            setDumpLocation(
-                result.position.lat,
-                result.position.lon,
-                result.address.freeformAddress
-            );
-        }
+                                    wardBoundaryLayer =
+                                        new atlas.layer.LineLayer(
+                                            wardBoundarySource,
+                                            null,
+                                            {
+                                                strokeColor: "#0f4c81",
+                                                strokeWidth: 3
+                                            }
+                                        );
 
-        function setDumpLocation(latitude, longitude, message) {
-            const latInput = document.getElementById("DumpLatitude");
-            const lngInput = document.getElementById("DumpLongitude");
+                                    reportMap.layers.add(
+                                        wardBoundaryLayer
+                                    );
 
-            const cleanLat = Number(latitude).toFixed(7).replace(",", ".");
-            const cleanLng = Number(longitude).toFixed(7).replace(",", ".");
+                                    wardBoundaryLoaded = true;
+                                }
 
-            latInput.value = cleanLat;
-            lngInput.value = cleanLng;
+                                const shapes =
+                                    wardBoundarySource.getShapes();
 
-            document.getElementById("debugLat").innerText = cleanLat;
-            document.getElementById("debugLng").innerText = cleanLng;
+                                if (shapes.length > 0) {
 
-            reportMap.setCamera({
-                center: [Number(cleanLng), Number(cleanLat)],
-                zoom: 16
-            });
+                                    const bounds =
+                                        atlas.data.BoundingBox.fromData(
+                                            shapes
+                                        );
 
-            if (dumpMarker) {
-                reportMap.markers.remove(dumpMarker);
-            }
+                                    reportMap.setCamera({
+                                        bounds: bounds,
+                                        padding: 45
+                                    });
+                                }
+                            }
+                            catch (error) {
+                                console.error(
+                                    "Failed to display municipality boundary:",
+                                    error
+                                );
+                            }
+                        }
 
-            dumpMarker = new atlas.HtmlMarker({
-                color: "Green",
-                text: "D",
-                position: [Number(cleanLng), Number(cleanLat)]
-            });
+                                      async function loadWardNumber(latitude, longitude) {
 
-            reportMap.markers.add(dumpMarker);
-
-            document.getElementById("mapSelectedMessage").innerText =
-                `${message} Coordinates: ${cleanLat}, ${cleanLng}`;
-
-                    loadWardNumber(cleanLat, cleanLng);
-        }
-
-                           async function loadWardNumber(latitude, longitude) {
                 const wardDisplay =
-                    document.getElementById("WardNumberDisplay");
+                    document.getElementById(
+                        "WardNumberDisplay"
+                    );
 
                 const wardHidden =
-                    document.getElementById("WardNumber");
+                    document.getElementById(
+                        "WardNumber"
+                    );
 
-                wardDisplay.value = "Identifying ward...";
+                const addressMessage =
+                    document.getElementById(
+                        "municipalityAddressMessage"
+                    );
+
+                wardDisplay.value =
+                    "Identifying ward...";
+
                 wardHidden.value = "";
+
+                addressMessage.innerText = "";
+                addressMessage.classList.remove(
+                    "error",
+                    "success"
+                );
 
                 try {
                     const response = await fetch(
@@ -408,180 +505,319 @@
                     );
 
                     if (!response.ok) {
-                        throw new Error(`Ward request failed: ${response.status}`);
+                        throw new Error(
+                            "Ward lookup failed."
+                        );
                     }
 
-                    const result = await response.json();
+                    const result =
+                        await response.json();
+
+                    // ==========================
+                    // LOCATION INSIDE MSUNDUZI
+                    // ==========================
 
                     if (result.success) {
-                        wardDisplay.value = `Ward ${result.wardNumber}`;
-                        wardHidden.value = result.wardNumber;
-                    } else {
-                        wardDisplay.value = "Outside Msunduzi Municipality";
-                        wardHidden.value = "";
+
+                        wardDisplay.value =
+                            `Ward ${result.wardNumber}`;
+
+                        wardHidden.value =
+                            result.wardNumber;
+
+                        addressMessage.innerText =
+                            "Location verified within Msunduzi Municipality.";
+
+                        addressMessage.classList.add(
+                            "success"
+                        );
+
+                        return;
                     }
+
+                    // ==========================
+                    // LOCATION OUTSIDE MSUNDUZI
+                    // ==========================
+
+                    wardDisplay.value =
+                        "Outside Msunduzi Municipality";
+
+                    wardHidden.value = "";
+
+                    addressMessage.innerText =
+                        "Address not found within Msunduzi Municipality.";
+
+                    addressMessage.classList.add(
+                        "error"
+                    );
+
+                    await showMsunduziBoundary();
                 }
                 catch (error) {
-                    console.error("Ward lookup error:", error);
 
-                    wardDisplay.value = "Unable to identify ward";
+                    console.error(
+                        "Ward lookup error:",
+                        error
+                    );
+
+                    wardDisplay.value =
+                        "Unable to identify ward";
+
                     wardHidden.value = "";
+
+                    addressMessage.innerText =
+                        "We could not verify this location. Please try again.";
+
+                    addressMessage.classList.add(
+                        "error"
+                    );
                 }
             }
 
-        function setupReportOtp() {
-            const reportForm = document.getElementById("reportForm");
-            const openReportOtpBtn = document.getElementById("openReportOtpBtn");
-            const reportOtpModal = document.getElementById("reportOtpModal");
-            const verifyReportOtpBtn = document.getElementById("verifyReportOtpBtn");
-            const reportCodeBoxes = document.querySelectorAll(".report-code-box");
-            const resendReportOtp = document.getElementById("resendReportOtp");
 
-            let reportOtpTimer;
-            let reportOtpVerified = false;
 
-            reportCodeBoxes.forEach((box, index) => {
-                box.addEventListener("input", function () {
-                    this.value = this.value.replace(/[^0-9]/g, "");
+                    function setupReportOtp() {
+                        const reportForm = document.getElementById("reportForm");
+                        const openReportOtpBtn = document.getElementById("openReportOtpBtn");
+                        const reportOtpModal = document.getElementById("reportOtpModal");
+                        const verifyReportOtpBtn = document.getElementById("verifyReportOtpBtn");
+                        const reportCodeBoxes = document.querySelectorAll(".report-code-box");
+                        const resendReportOtp = document.getElementById("resendReportOtp");
 
-                    if (this.value.length === 1 && index < reportCodeBoxes.length - 1) {
-                        reportCodeBoxes[index + 1].focus();
-                    }
-                });
+                        let reportOtpTimer;
+                        let reportOtpVerified = false;
 
-                box.addEventListener("keydown", function (e) {
-                    if (e.key === "Backspace" && this.value === "" && index > 0) {
-                        reportCodeBoxes[index - 1].focus();
-                    }
-                });
-            });
+                        reportCodeBoxes.forEach((box, index) => {
+                            box.addEventListener("input", function () {
+                                this.value = this.value.replace(/[^0-9]/g, "");
 
-            document.querySelector(".report-code-inputs").addEventListener("paste", function (e) {
-                e.preventDefault();
+                                if (this.value.length === 1 && index < reportCodeBoxes.length - 1) {
+                                    reportCodeBoxes[index + 1].focus();
+                                }
+                            });
 
-                const paste = (e.clipboardData || window.clipboardData)
-                    .getData("text")
-                    .replace(/\D/g, "")
-                    .substring(0, 6);
+                            box.addEventListener("keydown", function (e) {
+                                if (e.key === "Backspace" && this.value === "" && index > 0) {
+                                    reportCodeBoxes[index - 1].focus();
+                                }
+                            });
+                        });
 
-                [...paste].forEach((digit, i) => {
-                    if (reportCodeBoxes[i]) {
-                        reportCodeBoxes[i].value = digit;
-                    }
-                });
+                        document.querySelector(".report-code-inputs").addEventListener("paste", function (e) {
+                            e.preventDefault();
 
-                if (paste.length === 6) {
-                    reportCodeBoxes[5].focus();
-                }
-            });
+                            const paste = (e.clipboardData || window.clipboardData)
+                                .getData("text")
+                                .replace(/\D/g, "")
+                                .substring(0, 6);
 
-            openReportOtpBtn.addEventListener("click", async function () {
-                if (reportOtpVerified) {
-                    reportForm.submit();
+                            [...paste].forEach((digit, i) => {
+                                if (reportCodeBoxes[i]) {
+                                    reportCodeBoxes[i].value = digit;
+                                }
+                            });
+
+                            if (paste.length === 6) {
+                                reportCodeBoxes[5].focus();
+                            }
+                        });
+
+                        openReportOtpBtn.addEventListener("click", async function () {
+
+                                        const uploadInput =
+                document.querySelector('input[name="ImageFile"]');
+
+            const capturedImage =
+                document.getElementById("CapturedImageData");
+
+            const wardInput =
+                document.getElementById("WardNumber");
+
+            const wardDisplay =
+                document.getElementById("WardNumberDisplay");
+
+            const hasUploadedImage =
+                uploadInput &&
+                uploadInput.files &&
+                uploadInput.files.length > 0;
+
+            const hasCapturedImage =
+                capturedImage &&
+                capturedImage.value &&
+                capturedImage.value.trim() !== "";
+
+            // =====================================
+            // PHOTO VALIDATION
+            // =====================================
+
+            if (!hasUploadedImage && !hasCapturedImage) {
+                alert(
+                    "Please either upload a photo or take a photo before submitting the report."
+                );
+
+                return;
+            }
+
+            if (hasUploadedImage && hasCapturedImage) {
+                alert(
+                    "Please choose only one photo option. Either upload an existing photo or take a new photo."
+                );
+
+                return;
+            }
+
+            // =====================================
+            // FILE SIZE VALIDATION
+            // =====================================
+
+            if (hasUploadedImage) {
+                const file =
+                    uploadInput.files[0];
+
+                const maxFileSize =
+                    6 * 1024 * 1024;
+
+                if (file.size > maxFileSize) {
+                    alert(
+                        "The selected photo is too large. Please upload an image smaller than 6 MB."
+                    );
+
                     return;
                 }
-
-                const phoneNumber = document.getElementById("reportPhoneNumber").value;
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-                const formData = new FormData();
-                formData.append("phoneNumber", phoneNumber);
-                formData.append("__RequestVerificationToken", token);
-
-                openReportOtpBtn.disabled = true;
-                openReportOtpBtn.innerText = "Sending OTP...";
-
-                const response = await fetch("/User/SendReportOtp", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                openReportOtpBtn.disabled = false;
-                openReportOtpBtn.innerText = "Submit Report";
-
-                if (result.success) {
-                    clearReportOtpBoxes();
-                    reportOtpModal.classList.add("show");
-                    reportCodeBoxes[0].focus();
-                    startReportOtpCountdown();
-                } else {
-                    alert(result.message);
-                }
-            });
-
-            verifyReportOtpBtn.addEventListener("click", async function () {
-                const phoneNumber = document.getElementById("reportPhoneNumber").value;
-                const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-                let otp = "";
-                reportCodeBoxes.forEach(box => {
-                    otp += box.value;
-                });
-
-                if (otp.length !== 6) {
-                    alert("Please enter the full 6-digit OTP.");
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append("phoneNumber", phoneNumber);
-                formData.append("otp", otp);
-                formData.append("__RequestVerificationToken", token);
-
-                verifyReportOtpBtn.disabled = true;
-                verifyReportOtpBtn.innerText = "Verifying...";
-
-                const response = await fetch("/User/VerifyReportOtp", {
-                    method: "POST",
-                    body: formData
-                });
-
-                const result = await response.json();
-
-                verifyReportOtpBtn.disabled = false;
-                verifyReportOtpBtn.innerText = "Verify OTP & Submit Report";
-
-                if (result.success) {
-                    reportOtpVerified = true;
-                    reportOtpModal.classList.remove("show");
-                    reportForm.submit();
-                } else {
-                    alert(result.message);
-                }
-            });
-
-            resendReportOtp.addEventListener("click", function (e) {
-                e.preventDefault();
-                openReportOtpBtn.click();
-            });
-
-            function clearReportOtpBoxes() {
-                reportCodeBoxes.forEach(box => box.value = "");
             }
 
-            function startReportOtpCountdown() {
-                clearInterval(reportOtpTimer);
+            // =====================================
+            // MUNICIPALITY / WARD VALIDATION
+            // =====================================
 
-                let seconds = 300;
-                const countdown = document.getElementById("reportOtpCountdown");
+            if (!wardInput ||
+                !wardInput.value ||
+                wardInput.value.trim() === "") {
 
-                reportOtpTimer = setInterval(() => {
-                    let min = Math.floor(seconds / 60);
-                    let sec = seconds % 60;
+                alert(
+                    "Please select a valid dumping location within Msunduzi Municipality before submitting your report."
+                );
 
-                    countdown.innerText =
-                        `OTP expires in ${min}:${sec.toString().padStart(2, "0")}`;
+                return;
+            }
 
-                    seconds--;
+            if (
+                wardDisplay &&
+                wardDisplay.value === "Outside Msunduzi Municipality"
+            ) {
+                alert(
+                    "This location is outside Msunduzi Municipality. Please select a location within the municipality."
+                );
 
-                    if (seconds < 0) {
-                        clearInterval(reportOtpTimer);
-                        countdown.innerText = "OTP expired. Please resend OTP.";
+                return;
+            }
+
+                            if (reportOtpVerified) {
+                                reportForm.submit();
+                                return;
+                            }
+
+                            const phoneNumber = document.getElementById("reportPhoneNumber").value;
+                            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                            const formData = new FormData();
+                            formData.append("phoneNumber", phoneNumber);
+                            formData.append("__RequestVerificationToken", token);
+
+                            openReportOtpBtn.disabled = true;
+                            openReportOtpBtn.innerText = "Sending OTP...";
+
+                            const response = await fetch("/User/SendReportOtp", {
+                                method: "POST",
+                                body: formData
+                            });
+
+                            const result = await response.json();
+
+                            openReportOtpBtn.disabled = false;
+                            openReportOtpBtn.innerText = "Submit Report";
+
+                            if (result.success) {
+                                clearReportOtpBoxes();
+                                reportOtpModal.classList.add("show");
+                                reportCodeBoxes[0].focus();
+                                startReportOtpCountdown();
+                            } else {
+                                alert(result.message);
+                            }
+                        });
+
+                        verifyReportOtpBtn.addEventListener("click", async function () {
+                            const phoneNumber = document.getElementById("reportPhoneNumber").value;
+                            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+                            let otp = "";
+                            reportCodeBoxes.forEach(box => {
+                                otp += box.value;
+                            });
+
+                            if (otp.length !== 6) {
+                                alert("Please enter the full 6-digit OTP.");
+                                return;
+                            }
+
+                            const formData = new FormData();
+                            formData.append("phoneNumber", phoneNumber);
+                            formData.append("otp", otp);
+                            formData.append("__RequestVerificationToken", token);
+
+                            verifyReportOtpBtn.disabled = true;
+                            verifyReportOtpBtn.innerText = "Verifying...";
+
+                            const response = await fetch("/User/VerifyReportOtp", {
+                                method: "POST",
+                                body: formData
+                            });
+
+                            const result = await response.json();
+
+                            verifyReportOtpBtn.disabled = false;
+                            verifyReportOtpBtn.innerText = "Verify OTP & Submit Report";
+
+                            if (result.success) {
+                                reportOtpVerified = true;
+                                reportOtpModal.classList.remove("show");
+                                reportForm.submit();
+                            } else {
+                                alert(result.message);
+                            }
+                        });
+
+                        resendReportOtp.addEventListener("click", function (e) {
+                            e.preventDefault();
+                            openReportOtpBtn.click();
+                        });
+
+                        function clearReportOtpBoxes() {
+                            reportCodeBoxes.forEach(box => box.value = "");
+                        }
+
+                        function startReportOtpCountdown() {
+                            clearInterval(reportOtpTimer);
+
+                            let seconds = 300;
+                            const countdown = document.getElementById("reportOtpCountdown");
+
+                            reportOtpTimer = setInterval(() => {
+                                let min = Math.floor(seconds / 60);
+                                let sec = seconds % 60;
+
+                                countdown.innerText =
+                                    `OTP expires in ${min}:${sec.toString().padStart(2, "0")}`;
+
+                                seconds--;
+
+                                if (seconds < 0) {
+                                    clearInterval(reportOtpTimer);
+                                    countdown.innerText = "OTP expired. Please resend OTP.";
+                                }
+                            }, 1000);
+                        }
                     }
-                }, 1000);
-            }
-        }
-    </script>
+        </script>
 }
