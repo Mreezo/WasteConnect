@@ -213,6 +213,66 @@ namespace WasteConnect.Controllers
                 return View("ReportDumping", model);
             }
 
+            const long MaxImageSize = 6 * 1024 * 1024;
+
+            bool hasUploadedImage =
+                model.ImageFile != null &&
+                model.ImageFile.Length > 0;
+
+            bool hasCapturedImage =
+                !string.IsNullOrWhiteSpace(
+                    model.CapturedImageData);
+
+            if (!hasUploadedImage &&
+                !hasCapturedImage)
+            {
+                TempData["Error"] =
+                    "Please either upload a photo or take a photo.";
+
+                return RedirectToAction(
+                    nameof(ReportDumping));
+            }
+
+            if (hasUploadedImage &&
+                hasCapturedImage)
+            {
+                TempData["Error"] =
+                    "Please choose only one photo option. Either upload a photo or take a photo.";
+
+                return RedirectToAction(
+                    nameof(ReportDumping));
+            }
+
+            if (hasUploadedImage &&
+                model.ImageFile!.Length > MaxImageSize)
+            {
+                TempData["Error"] =
+                    "The selected image is too large. Maximum allowed size is 6 MB.";
+
+                return RedirectToAction(
+                    nameof(ReportDumping));
+            }
+
+            if (hasUploadedImage)
+            {
+                var allowedTypes =
+                    new[]
+                    {
+            "image/jpeg",
+            "image/png"
+                    };
+
+                if (!allowedTypes.Contains(
+                    model.ImageFile!.ContentType.ToLowerInvariant()))
+                {
+                    TempData["Error"] =
+                        "Only JPG, JPEG and PNG images are allowed.";
+
+                    return RedirectToAction(
+                        nameof(ReportDumping));
+                }
+            }
+
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
@@ -601,5 +661,26 @@ namespace WasteConnect.Controllers
                 wardNumber
             });
         }
+        [HttpGet]
+        public IActionResult GetMsunduziWardBoundaries()
+        {
+            var filePath = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Data",
+                "GIS",
+                "msunduzi-ward-2026.geojson");
+
+            if (!System.IO.File.Exists(filePath))
+            {
+                return NotFound();
+            }
+
+            var geoJson = System.IO.File.ReadAllText(filePath);
+
+            return Content(
+                geoJson,
+                "application/geo+json");
+        }
     }
 }
+
