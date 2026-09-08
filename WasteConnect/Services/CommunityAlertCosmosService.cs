@@ -7,18 +7,25 @@ namespace WasteConnect.Services
     {
         private readonly Container _container;
 
-        public CommunityAlertCosmosService(
-            CosmosClient cosmosClient,
-            IConfiguration configuration)
+        public CommunityAlertCosmosService(IConfiguration configuration)
         {
-            var databaseName =
+            string endpoint =
+                configuration["CosmosDb:Endpoint"];
+
+            string key =
+                configuration["CosmosDb:Key"];
+
+            string databaseName =
                 configuration["CosmosDb:DatabaseName"];
 
-            _container = cosmosClient.GetContainer(
-                databaseName,
-                "CommunityAlerts");
-        }
+            CosmosClient client =
+                new CosmosClient(endpoint, key);
 
+            _container =
+                client.GetContainer(
+                    databaseName,
+                    "CommunityAlerts");
+        }
 
         // ==========================================
         // CREATE ALERT
