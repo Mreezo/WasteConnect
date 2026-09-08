@@ -3,6 +3,334 @@
     ViewData["Title"] = "Admin Dashboard";
 }
 
-<h2>Admin Overview</h2>
-<p>Manage users, companies, reports and analytics from here.</p>
+<link rel="stylesheet" href="~/css/admin-dashboard.css" />
+
+<div class="admin-dashboard">
+
+    <section class="community-alert-section">
+
+        <div class="section-heading">
+            <div>
+                <h2>Community Alerts</h2>
+
+                <p>
+                    Publish important service updates directly
+                    to the Community of Msunduzi.
+                </p>
+            </div>
+        </div>
+
+        <div class="alert-card-container">
+
+            <!-- Electricity -->
+            <div class="alert-card">
+
+                <div class="alert-icon electricity-icon">
+                    ⚡
+                </div>
+
+                <h4>Electricity Shortage</h4>
+
+                <p>
+                    Notify residents about outages,
+                    planned maintenance and restoration updates.
+                </p>
+
+                <button type="button"
+                        class="alert-btn electricity-btn"
+                        data-alert-type="Electricity">
+                    Create Alert
+                </button>
+
+            </div>
+
+            <!-- Water -->
+            <div class="alert-card">
+
+                <div class="alert-icon water-icon">
+                    💧
+                </div>
+
+                <h4>Water Shortage</h4>
+
+                <p>
+                    Inform residents about water interruptions,
+                    burst pipes, maintenance and restoration times.
+                </p>
+
+                <button type="button"
+                        class="alert-btn water-btn"
+                        data-alert-type="Water">
+                    Create Alert
+                </button>
+
+            </div>
+
+            <!-- Bin Collection -->
+            <div class="alert-card">
+
+                <div class="alert-icon bin-icon">
+                    🗑️
+                </div>
+
+                <h4>Bin Collection Schedule</h4>
+
+                <p>
+                    Publish collection schedules, delays
+                    and temporary changes for wards and areas.
+                </p>
+
+                <button type="button"
+                        class="alert-btn bin-btn"
+                        data-alert-type="Bin Collection">
+                    Create Alert
+                </button>
+
+            </div>
+
+        </div>
+
+    </section>
+
 </div>
+
+
+<!-- =========================================
+     COMMUNITY ALERT MODAL
+========================================= -->
+
+<div class="alert-modal-overlay"
+     id="communityAlertModal">
+
+    <div class="alert-modal">
+
+        <div class="modal-header">
+
+            <div class="modal-title-area">
+
+                <div class="modal-icon"
+                     id="modalAlertIcon">
+                    ⚡
+                </div>
+
+                <div>
+                    <h3 id="modalAlertTitle">
+                        Create Community Alert
+                    </h3>
+
+                    <p>
+                        Enter the information residents should receive.
+                    </p>
+                </div>
+
+            </div>
+
+            <button type="button"
+                    class="modal-close-btn"
+                    id="closeAlertModal">
+                &times;
+            </button>
+
+        </div>
+
+
+        <form id="communityAlertForm">
+
+            @Html.AntiForgeryToken()
+
+            <input type="hidden"
+                   id="alertType"
+                   name="AlertType" />
+
+
+            <!-- Area Type -->
+            <div class="form-group">
+
+                <label for="areaType">
+                    Who is affected?
+                </label>
+
+                <select id="areaType"
+                        name="AreaType"
+                        class="form-control">
+
+                    <option value="">
+                        Select affected area
+                    </option>
+
+                    <option value="Municipality">
+                        Entire Municipality
+                    </option>
+
+                    <option value="Ward">
+                        Specific Ward
+                    </option>
+
+                    <option value="Area">
+                        Specific Area
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <!-- Ward -->
+            <div class="form-group hidden-field"
+                 id="wardField">
+
+                <label for="wardNumber">
+                    Ward Number
+                </label>
+
+                <select id="wardNumber"
+                        name="WardNumber"
+                        class="form-control">
+
+                    <option value="">
+                        Select ward
+                    </option>
+
+                    @for (int ward = 1; ward <= 41; ward++)
+                    {
+                        <option value="@ward">
+                            Ward @ward
+                        </option>
+                    }
+
+                </select>
+
+            </div>
+
+
+            <!-- Specific Area -->
+            <div class="form-group hidden-field"
+                 id="specificAreaField">
+
+                <label for="specificArea">
+                    Area / Suburb
+                </label>
+
+                <input type="text"
+                       id="specificArea"
+                       name="SpecificArea"
+                       class="form-control"
+                       placeholder="Example: Imbali Unit 13" />
+
+            </div>
+
+
+            <!-- Reason -->
+            <div class="form-group">
+
+                <label for="alertReason">
+                    Reason
+                </label>
+
+                <input type="text"
+                       id="alertReason"
+                       name="Reason"
+                       class="form-control"
+                       placeholder="Example: Planned transformer maintenance" />
+
+            </div>
+
+
+            <!-- Dates -->
+            <div class="form-row">
+
+                <div class="form-group">
+
+                    <label for="startDateTime">
+                        Start Date & Time
+                    </label>
+
+                    <input type="datetime-local"
+                           id="startDateTime"
+                           name="StartDateTime"
+                           class="form-control" />
+
+                </div>
+
+                <div class="form-group">
+
+                    <label for="endDateTime">
+                        Expected End Date & Time
+                    </label>
+
+                    <input type="datetime-local"
+                           id="endDateTime"
+                           name="EndDateTime"
+                           class="form-control" />
+
+                </div>
+
+            </div>
+
+
+            <!-- Description -->
+            <div class="form-group">
+
+                <label for="alertDescription">
+                    Additional Information
+                </label>
+
+                <textarea id="alertDescription"
+                          name="Description"
+                          class="form-control textarea-control"
+                          rows="4"
+                          placeholder="Provide additional information for residents..."></textarea>
+
+            </div>
+
+
+            <!-- Priority -->
+            <div class="form-group">
+
+                <label for="priority">
+                    Priority
+                </label>
+
+                <select id="priority"
+                        name="Priority"
+                        class="form-control">
+
+                    <option value="Normal">
+                        Normal
+                    </option>
+
+                    <option value="Important">
+                        Important
+                    </option>
+
+                    <option value="Emergency">
+                        Emergency
+                    </option>
+
+                </select>
+
+            </div>
+
+
+            <div class="modal-actions">
+
+                <button type="button"
+                        class="cancel-btn"
+                        id="cancelAlertModal">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        class="publish-btn">
+                    Publish Alert
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+<script src="~/js/admin-dashboard.js"></script>

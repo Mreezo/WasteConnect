@@ -33,6 +33,7 @@ builder.Services.AddScoped<DisposalSiteService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TwilioOtpService>();
+builder.Services.AddSingleton<CommunityAlertCosmosService>();
 
 builder.Services.AddSingleton<
     IWardLookupService,
