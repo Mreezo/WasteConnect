@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using WasteConnect.Data;
 using WasteConnect.Models;
+using Microsoft.Azure.Cosmos;
 using WasteConnect.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,7 +34,7 @@ builder.Services.AddScoped<DisposalSiteService>();
 builder.Services.AddScoped<EmailService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TwilioOtpService>();
-builder.Services.AddSingleton<CommunityAlertCosmosService>();
+builder.Services.AddScoped<CommunityAlertCosmosService>();
 
 builder.Services.AddSingleton<
     IWardLookupService,
