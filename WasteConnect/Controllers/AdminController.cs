@@ -145,6 +145,167 @@ namespace WasteConnect.Controllers
             });
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateCommunityAlertStatus(
+            string id,
+            string alertType,
+            string status)
+                {
+            var allowedStatuses = new[]
+            {
+                "Active",
+                "In Progress",
+                "Resolved"
+            };
+
+            if (!allowedStatuses.Contains(status))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Invalid alert status."
+                });
+            }
+
+            var alert =
+                await _communityAlertService
+                    .GetAlertByIdAsync(id, alertType);
+
+            if (alert == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Community alert not found."
+                });
+            }
+
+            alert.Status = status;
+
+            await _communityAlertService
+                .UpdateAlertAsync(alert);
+
+            return Json(new
+            {
+                success = true,
+                message =
+                    $"Alert status updated to {status}."
+            });
+        }
+
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteCommunityAlert(
+            string id,
+            string alertType)
+                {
+
+            if (string.IsNullOrWhiteSpace(id) ||
+                string.IsNullOrWhiteSpace(alertType))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Invalid community alert."
+                });
+            }
+
+            var alert =
+                await _communityAlertService
+                    .GetAlertByIdAsync(id, alertType);
+
+            if (alert == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Community alert not found."
+                });
+            }
+
+            await _communityAlertService
+                .DeleteAlertAsync(
+                    alert.Id,
+                    alert.AlertType);
+
+            return Json(new
+            {
+                success = true,
+                message =
+                    "Community alert deleted successfully."
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditCommunityAlert(CommunityAlert updatedAlert)
+        {
+            var alert =
+                await _communityAlertService
+                    .GetAlertByIdAsync(
+                        updatedAlert.Id,
+                        updatedAlert.AlertType);
+
+            if (alert == null)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = "Community alert not found."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(
+                updatedAlert.Reason))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message =
+                        "Please provide a reason."
+                });
+            }
+
+
+            alert.AreaType =
+                updatedAlert.AreaType;
+
+            alert.WardNumber =
+                updatedAlert.WardNumber;
+
+            alert.SpecificArea =
+                updatedAlert.SpecificArea;
+
+            alert.Reason =
+                updatedAlert.Reason.Trim();
+
+            alert.Description =
+                updatedAlert.Description?.Trim();
+
+            alert.StartDateTime =
+                updatedAlert.StartDateTime;
+
+            alert.EndDateTime =
+                updatedAlert.EndDateTime;
+
+            alert.Priority =
+                updatedAlert.Priority;
+
+
+            await _communityAlertService
+                .UpdateAlertAsync(alert);
+
+
+            return Json(new
+            {
+                success = true,
+                message =
+                    "Community alert updated successfully."
+            });
+        }
+
         // =====================================================
         // REPORT MANAGEMENT
         // =====================================================
