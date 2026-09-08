@@ -46,9 +46,12 @@ namespace WasteConnect.Controllers
         // =====================================================
 
         [HttpGet]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
-            return View();
+            var alerts =
+                await _communityAlertService.GetAllAlertsAsync();
+
+            return View(alerts);
         }
 
         [HttpPost]
