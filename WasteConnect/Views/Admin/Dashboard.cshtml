@@ -1,4 +1,6 @@
-﻿@{
+﻿@model List<WasteConnect.Models.CommunityAlert>
+
+@{
     Layout = "_DashboardLayout";
     ViewData["Title"] = "Admin Dashboard";
 }
@@ -37,7 +39,7 @@
                 </p>
 
                 <button type="button"
-                        class="alert-btn electricity-btn"
+                        class="alert-card-button open-alert-modal"
                         data-alert-type="Electricity">
                     Create Alert
                 </button>
@@ -59,7 +61,7 @@
                 </p>
 
                 <button type="button"
-                        class="alert-btn water-btn"
+                        class="alert-card-button open-alert-modal"
                         data-alert-type="Water">
                     Create Alert
                 </button>
@@ -81,7 +83,7 @@
                 </p>
 
                 <button type="button"
-                        class="alert-btn bin-btn"
+                        class="alert-card-button open-alert-modal"
                         data-alert-type="Bin Collection">
                     Create Alert
                 </button>
@@ -149,6 +151,10 @@
                 <label for="areaType">
                     Who is affected?
                 </label>
+
+                <input type="hidden"
+                       id="alertId"
+                       name="Id" />
 
                 <select id="areaType"
                         name="AreaType"
@@ -332,5 +338,197 @@
     </div>
 
 </div>
+
+<section class="published-alerts-section">
+
+    <div class="published-alerts-header">
+
+        <div>
+            <h3>Published Community Alerts</h3>
+
+            <p>
+                Monitor, update and manage alerts
+                currently published to the community.
+            </p>
+        </div>
+
+    </div>
+
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="empty-alerts">
+
+            <div class="empty-alert-icon">
+                🔔
+            </div>
+
+            <h4>No community alerts yet</h4>
+
+            <p>
+                Alerts published by the municipality
+                will appear here.
+            </p>
+
+        </div>
+    }
+    else
+    {
+        <div class="published-alert-list">
+
+            @foreach (var alert in Model)
+            {
+                <div class="published-alert-card">
+
+                    <div class="published-alert-main">
+
+                        <div class="published-alert-icon">
+
+                            @if (alert.AlertType == "Electricity")
+                            {
+                                <span>⚡</span>
+                            }
+                            else if (alert.AlertType == "Water")
+                            {
+                                <span>💧</span>
+                            }
+                            else
+                            {
+                                <span>🗑️</span>
+                            }
+
+                        </div>
+
+
+                        <div class="published-alert-content">
+
+                            <div class="published-alert-title-row">
+
+                                <h4>
+                                    @alert.AlertType Alert
+                                </h4>
+
+                                <span class="status-badge
+                                              status-@alert.Status
+                                              .ToLower()
+                                              .Replace(" ", " -")">
+
+                                    @alert.Status
+
+                                </span>
+
+                            </div>
+
+
+                            <p class="alert-reason">
+                                <strong>Reason:</strong>
+                                @alert.Reason
+                            </p>
+
+
+                            <div class="alert-meta">
+
+                                @if (alert.AreaType == "Ward")
+                                {
+                                    <span>
+                                        📍 Ward @alert.WardNumber
+                                    </span>
+                                }
+                                else if (alert.AreaType == "Area")
+                                {
+                                    <span>
+                                        📍 @alert.SpecificArea
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span>
+                                        📍 Entire Municipality
+                                    </span>
+                                }
+
+
+                                <span>
+                                    🕒
+                                    @alert.StartDateTime
+                                    .ToString("dd MMM yyyy HH:mm")
+                                </span>
+
+                            </div>
+
+
+                            @if (!string.IsNullOrWhiteSpace(
+                                                alert.Description))
+                            {
+                                <p class="alert-description">
+                                    @alert.Description
+                                </p>
+                            }
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="published-alert-actions">
+
+                        <button type="button"
+                                class="action-btn edit-alert-btn"
+                                data-id="@alert.Id"
+                                data-alert-type="@alert.AlertType"
+                                data-area-type="@alert.AreaType"
+                                data-ward="@alert.WardNumber"
+                                data-area="@alert.SpecificArea"
+                                data-reason="@alert.Reason"
+                                data-description="@alert.Description"
+                                data-start="@alert.StartDateTime.ToString("yyyy-MM-ddTHH:mm")"
+                                data-end="@(alert.EndDateTime?.ToString("yyyy-MM-ddTHH:mm"))"
+                                data-priority="@alert.Priority">
+
+                            Edit
+
+                        </button>
+
+
+                        <select class="status-select"
+                                data-id="@alert.Id"
+                                data-alert-type="@alert.AlertType">
+
+                            <option value="Active"
+                                    selected="@(alert.Status == "Active")">
+                                Active
+                            </option>
+
+                            <option value="In Progress"
+                                    selected="@(alert.Status == "In Progress")">
+                                In Progress
+                            </option>
+
+                            <option value="Resolved"
+                                    selected="@(alert.Status == "Resolved")">
+                                Resolved
+                            </option>
+
+                        </select>
+
+
+                        <button type="button"
+                                class="action-btn delete-alert-btn"
+                                data-id="@alert.Id"
+                                data-alert-type="@alert.AlertType">
+
+                            Delete
+
+                        </button>
+
+                    </div>
+
+                </div>
+            }
+
+        </div>
+    }
+
+</section>
 
 <script src="~/js/admin-dashboard.js"></script>
