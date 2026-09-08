@@ -17,6 +17,7 @@ namespace WasteConnect.Controllers
         private readonly IConfiguration _configuration;
         private readonly TwilioOtpService _twilioOtpService;
         private readonly IWardLookupService _wardLookupService;
+        private readonly CommunityAlertCosmosService _communityAlertService;
 
 
         public UserController(
@@ -25,6 +26,7 @@ namespace WasteConnect.Controllers
             ReportCosmosService reportService,
             IConfiguration configuration,
              TwilioOtpService twilioOtpService,
+              CommunityAlertCosmosService communityAlertService,
              IWardLookupService wardLookupService)
         {
             _userManager = userManager;
@@ -32,7 +34,9 @@ namespace WasteConnect.Controllers
             _reportService = reportService;
             _configuration = configuration;
             _twilioOtpService = twilioOtpService;
+            _communityAlertService = communityAlertService;
             _wardLookupService = wardLookupService;
+
         }
 
         private double CalculateDistanceMeters( double lat1,double lon1,double lat2,double lon2)
@@ -160,10 +164,15 @@ namespace WasteConnect.Controllers
 
             return RedirectToAction(nameof(Profile));
         }
+
         [HttpGet]
-        public IActionResult Dashboard()
+        public async Task<IActionResult> Dashboard()
         {
-            return View();
+            var alerts =
+                await _communityAlertService
+                    .GetAllAlertsAsync();
+
+            return View(alerts);
         }
 
         [HttpGet]
