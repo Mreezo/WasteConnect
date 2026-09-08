@@ -1,201 +1,810 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
 
-    const modal = document.getElementById("communityAlertModal");
-    const closeButton = document.getElementById("closeAlertModal");
-    const cancelButton = document.getElementById("cancelAlertModal");
+    // =====================================================
+    // ELEMENTS
+    // =====================================================
 
-    const modalTitle = document.getElementById("modalAlertTitle");
-    const modalIcon = document.getElementById("modalAlertIcon");
+    const modal =
+        document.getElementById("communityAlertModal");
 
-    const alertTypeInput = document.getElementById("alertType");
+    const closeButton =
+        document.getElementById("closeAlertModal");
 
-    const areaType = document.getElementById("areaType");
-    const wardField = document.getElementById("wardField");
-    const specificAreaField = document.getElementById("specificAreaField");
+    const cancelButton =
+        document.getElementById("cancelAlertModal");
 
-    const alertButtons =
-        document.querySelectorAll("[data-alert-type]");
+    const modalTitle =
+        document.getElementById("modalAlertTitle");
+
+    const modalIcon =
+        document.getElementById("modalAlertIcon");
 
     const form =
         document.getElementById("communityAlertForm");
 
+    const alertIdInput =
+        document.getElementById("alertId");
 
-    alertButtons.forEach(function (button) {
+    const alertTypeInput =
+        document.getElementById("alertType");
 
-        button.addEventListener("click", function () {
+    const areaType =
+        document.getElementById("areaType");
 
-            const alertType =
-                button.dataset.alertType;
+    const wardField =
+        document.getElementById("wardField");
 
-            alertTypeInput.value = alertType;
+    const specificAreaField =
+        document.getElementById("specificAreaField");
 
-            configureModal(alertType);
+    const wardNumber =
+        document.getElementById("wardNumber");
 
-            modal.classList.add("active");
+    const specificArea =
+        document.getElementById("specificArea");
 
-            document.body.style.overflow = "hidden";
-        });
+    const alertReason =
+        document.getElementById("alertReason");
+
+    const alertDescription =
+        document.getElementById("alertDescription");
+
+    const startDateTime =
+        document.getElementById("startDateTime");
+
+    const endDateTime =
+        document.getElementById("endDateTime");
+
+    const priority =
+        document.getElementById("priority");
+
+    const publishButton =
+        form.querySelector(".publish-btn");
+
+
+    // =====================================================
+    // IMPORTANT
+    //
+    // ONLY buttons with .open-alert-modal can create alerts.
+    //
+    // We DO NOT use:
+    // document.querySelectorAll("[data-alert-type]")
+    //
+    // because Edit, Status and Delete also have
+    // data-alert-type.
+    // =====================================================
+
+    const createAlertButtons =
+        document.querySelectorAll(".open-alert-modal");
+
+    const editButtons =
+        document.querySelectorAll(".edit-alert-btn");
+
+    const statusSelects =
+        document.querySelectorAll(".status-select");
+
+    const deleteButtons =
+        document.querySelectorAll(".delete-alert-btn");
+
+
+    // =====================================================
+    // CREATE / EDIT MODE
+    // =====================================================
+
+    let editingAlert = false;
+
+
+    // =====================================================
+    // OPEN CREATE ALERT MODAL
+    // =====================================================
+
+    createAlertButtons.forEach(function (button) {
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+                resetAlertForm();
+
+                editingAlert = false;
+
+                const alertType =
+                    button.dataset.alertType;
+
+                alertTypeInput.value =
+                    alertType;
+
+                configureModal(
+                    alertType,
+                    false
+                );
+
+                modal.classList.add("active");
+
+                document.body.style.overflow =
+                    "hidden";
+            }
+        );
 
     });
 
 
-    function configureModal(alertType) {
+    // =====================================================
+    // CONFIGURE MODAL
+    // =====================================================
+
+    function configureModal(
+        alertType,
+        isEditing
+    ) {
 
         if (alertType === "Electricity") {
 
-            modalTitle.textContent =
-                "Create Electricity Alert";
-
             modalIcon.textContent = "⚡";
 
-        }
-        else if (alertType === "Water") {
-
             modalTitle.textContent =
-                "Create Water Alert";
+                isEditing
+                    ? "Edit Electricity Alert"
+                    : "Create Electricity Alert";
+        }
+
+        else if (alertType === "Water") {
 
             modalIcon.textContent = "💧";
 
-        }
-        else if (alertType === "Bin Collection") {
-
             modalTitle.textContent =
-                "Create Bin Collection Alert";
+                isEditing
+                    ? "Edit Water Alert"
+                    : "Create Water Alert";
+        }
+
+        else if (
+            alertType === "Bin Collection"
+        ) {
 
             modalIcon.textContent = "🗑️";
-        }
 
+            modalTitle.textContent =
+                isEditing
+                    ? "Edit Bin Collection Alert"
+                    : "Create Bin Collection Alert";
+        }
     }
 
 
-    areaType.addEventListener("change", function () {
+    // =====================================================
+    // AREA TYPE
+    // =====================================================
 
-        const selectedValue =
-            areaType.value;
+    areaType.addEventListener(
+        "change",
+        updateAreaFields
+    );
 
-        wardField.style.display = "none";
-        specificAreaField.style.display = "none";
 
-        if (selectedValue === "Ward") {
+    function updateAreaFields() {
 
-            wardField.style.display = "block";
+        wardField.style.display =
+            "none";
 
+        specificAreaField.style.display =
+            "none";
+
+
+        if (areaType.value === "Ward") {
+
+            wardField.style.display =
+                "block";
         }
-        else if (selectedValue === "Area") {
 
-            specificAreaField.style.display = "block";
+        else if (
+            areaType.value === "Area"
+        ) {
+
+            specificAreaField.style.display =
+                "block";
         }
+    }
 
-    });
 
+    // =====================================================
+    // RESET FORM
+    // =====================================================
+
+    function resetAlertForm() {
+
+        form.reset();
+
+        alertIdInput.value = "";
+
+        alertTypeInput.value = "";
+
+        editingAlert = false;
+
+        wardField.style.display =
+            "none";
+
+        specificAreaField.style.display =
+            "none";
+
+        publishButton.textContent =
+            "Publish Alert";
+    }
+
+
+    // =====================================================
+    // CLOSE MODAL
+    // =====================================================
 
     function closeModal() {
 
         modal.classList.remove("active");
 
-        document.body.style.overflow = "";
+        document.body.style.overflow =
+            "";
 
-        form.reset();
-
-        wardField.style.display = "none";
-        specificAreaField.style.display = "none";
+        resetAlertForm();
     }
 
 
     closeButton.addEventListener(
         "click",
-        closeModal
+        function (event) {
+
+            event.preventDefault();
+
+            closeModal();
+        }
     );
 
 
     cancelButton.addEventListener(
         "click",
-        closeModal
+        function (event) {
+
+            event.preventDefault();
+
+            closeModal();
+        }
     );
 
 
-    modal.addEventListener("click", function (event) {
+    modal.addEventListener(
+        "click",
+        function (event) {
 
-        if (event.target === modal) {
+            if (event.target === modal) {
 
-            closeModal();
+                closeModal();
+            }
         }
+    );
 
-    });
 
+    document.addEventListener(
+        "keydown",
+        function (event) {
 
-    document.addEventListener("keydown", function (event) {
+            if (
+                event.key === "Escape" &&
+                modal.classList.contains(
+                    "active"
+                )
+            ) {
 
-        if (event.key === "Escape" &&
-            modal.classList.contains("active")) {
-
-            closeModal();
+                closeModal();
+            }
         }
+    );
 
-    });
+
+    // =====================================================
+    // CREATE OR EDIT ALERT
+    // =====================================================
+
+    form.addEventListener(
+        "submit",
+        async function (event) {
+
+            event.preventDefault();
+
+            const originalText =
+                publishButton.textContent;
+
+            publishButton.disabled =
+                true;
+
+            publishButton.textContent =
+                editingAlert
+                    ? "Saving..."
+                    : "Publishing...";
 
 
-    form.addEventListener("submit", async function (event) {
+            try {
 
-        event.preventDefault();
+                const formData =
+                    new FormData(form);
 
-        const publishButton =
-            form.querySelector(".publish-btn");
 
-        const originalButtonText =
-            publishButton.textContent;
+                const endpoint =
+                    editingAlert
+                        ? "/Admin/EditCommunityAlert"
+                        : "/Admin/PublishCommunityAlert";
 
-        publishButton.disabled = true;
-        publishButton.textContent = "Publishing...";
 
-        try {
+                const response =
+                    await fetch(
+                        endpoint,
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
 
-            const formData =
-                new FormData(form);
 
-            const response = await fetch(
-                "/Admin/PublishCommunityAlert",
-                {
-                    method: "POST",
-                    body: formData
-                }
-            );
+                const responseText =
+                    await response.text();
 
-            const result =
-                await response.json();
 
-            if (!response.ok) {
-
-                alert(
-                    result.message ||
-                    "Unable to publish the alert."
+                console.log(
+                    "Server response:",
+                    responseText
                 );
 
-                return;
+
+                let result;
+
+
+                try {
+
+                    result =
+                        JSON.parse(
+                            responseText
+                        );
+                }
+                catch {
+
+                    throw new Error(
+                        responseText
+                    );
+                }
+
+
+                if (!response.ok) {
+
+                    alert(
+                        result.message ||
+                        "Unable to save the alert."
+                    );
+
+                    return;
+                }
+
+
+                alert(
+                    result.message
+                );
+
+
+                window.location.reload();
+
             }
+            catch (error) {
 
-            alert(result.message);
+                console.error(
+                    "Community alert error:",
+                    error
+                );
 
-            closeModal();
 
+                alert(
+                    error.message ||
+                    "Something went wrong while saving the alert."
+                );
+
+            }
+            finally {
+
+                publishButton.disabled =
+                    false;
+
+                publishButton.textContent =
+                    originalText;
+            }
         }
-        catch (error) {
+    );
 
-            console.error(
-                "Community alert error:",
-                error
-            );
 
-            alert(
-                "Something went wrong while publishing the alert."
-            );
-        }
-        finally {
+    // =====================================================
+    // EDIT ALERT
+    //
+    // IMPORTANT:
+    // This listener is completely separate from
+    // createAlertButtons.
+    // =====================================================
 
-            publishButton.disabled = false;
-            publishButton.textContent =
-                originalButtonText;
-        }
+    editButtons.forEach(function (button) {
+
+        button.addEventListener(
+            "click",
+            function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                editingAlert = true;
+
+
+                const alertType =
+                    button.dataset.alertType;
+
+
+                alertIdInput.value =
+                    button.dataset.id || "";
+
+                alertTypeInput.value =
+                    alertType;
+
+
+                areaType.value =
+                    button.dataset.areaType || "";
+
+
+                wardNumber.value =
+                    button.dataset.ward || "";
+
+
+                specificArea.value =
+                    button.dataset.area || "";
+
+
+                alertReason.value =
+                    button.dataset.reason || "";
+
+
+                alertDescription.value =
+                    button.dataset.description || "";
+
+
+                startDateTime.value =
+                    button.dataset.start || "";
+
+
+                endDateTime.value =
+                    button.dataset.end || "";
+
+
+                priority.value =
+                    button.dataset.priority ||
+                    "Normal";
+
+
+                updateAreaFields();
+
+
+                configureModal(
+                    alertType,
+                    true
+                );
+
+
+                publishButton.textContent =
+                    "Save Changes";
+
+
+                /*
+                 * IMPORTANT:
+                 *
+                 * Edit intentionally opens the alert form
+                 * in EDIT MODE.
+                 *
+                 * It will NOT call PublishCommunityAlert.
+                 *
+                 * It calls EditCommunityAlert instead.
+                 */
+
+                modal.classList.add(
+                    "active"
+                );
+
+                document.body.style.overflow =
+                    "hidden";
+            }
+        );
+
+    });
+
+
+    // =====================================================
+    // UPDATE STATUS
+    //
+    // DOES NOT OPEN MODAL
+    // =====================================================
+
+    statusSelects.forEach(function (select) {
+
+        select.addEventListener(
+            "change",
+            async function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                const previousStatus =
+                    select.dataset.currentStatus ||
+                    "";
+
+
+                select.disabled =
+                    true;
+
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "id",
+                    select.dataset.id
+                );
+
+
+                formData.append(
+                    "alertType",
+                    select.dataset.alertType
+                );
+
+
+                formData.append(
+                    "status",
+                    select.value
+                );
+
+
+                const tokenInput =
+                    document.querySelector(
+                        'input[name="__RequestVerificationToken"]'
+                    );
+
+
+                if (tokenInput) {
+
+                    formData.append(
+                        "__RequestVerificationToken",
+                        tokenInput.value
+                    );
+                }
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/Admin/UpdateCommunityAlertStatus",
+                            {
+                                method: "POST",
+                                body: formData
+                            }
+                        );
+
+
+                    const responseText =
+                        await response.text();
+
+
+                    let result;
+
+
+                    try {
+
+                        result =
+                            JSON.parse(
+                                responseText
+                            );
+                    }
+                    catch {
+
+                        throw new Error(
+                            responseText
+                        );
+                    }
+
+
+                    if (!response.ok) {
+
+                        alert(
+                            result.message ||
+                            "Unable to update alert status."
+                        );
+
+
+                        if (previousStatus) {
+
+                            select.value =
+                                previousStatus;
+                        }
+
+
+                        return;
+                    }
+
+
+                    window.location.reload();
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "Status update error:",
+                        error
+                    );
+
+
+                    if (previousStatus) {
+
+                        select.value =
+                            previousStatus;
+                    }
+
+
+                    alert(
+                        "Unable to update the alert status."
+                    );
+
+                }
+                finally {
+
+                    select.disabled =
+                        false;
+                }
+            }
+        );
+
+    });
+
+
+    // =====================================================
+    // DELETE ALERT
+    //
+    // DOES NOT OPEN COMMUNITY ALERT MODAL
+    // =====================================================
+
+    deleteButtons.forEach(function (button) {
+
+        button.addEventListener(
+            "click",
+            async function (event) {
+
+                event.preventDefault();
+                event.stopPropagation();
+
+
+                const confirmed =
+                    confirm(
+                        "Are you sure you want to delete this community alert?"
+                    );
+
+
+                if (!confirmed) {
+
+                    return;
+                }
+
+
+                button.disabled =
+                    true;
+
+
+                const formData =
+                    new FormData();
+
+
+                formData.append(
+                    "id",
+                    button.dataset.id
+                );
+
+
+                formData.append(
+                    "alertType",
+                    button.dataset.alertType
+                );
+
+
+                const tokenInput =
+                    document.querySelector(
+                        'input[name="__RequestVerificationToken"]'
+                    );
+
+
+                if (tokenInput) {
+
+                    formData.append(
+                        "__RequestVerificationToken",
+                        tokenInput.value
+                    );
+                }
+
+
+                try {
+
+                    const response =
+                        await fetch(
+                            "/Admin/DeleteCommunityAlert",
+                            {
+                                method: "POST",
+                                body: formData
+                            }
+                        );
+
+
+                    const responseText =
+                        await response.text();
+
+
+                    let result;
+
+
+                    try {
+
+                        result =
+                            JSON.parse(
+                                responseText
+                            );
+                    }
+                    catch {
+
+                        throw new Error(
+                            responseText
+                        );
+                    }
+
+
+                    if (!response.ok) {
+
+                        alert(
+                            result.message ||
+                            "Unable to delete the alert."
+                        );
+
+                        return;
+                    }
+
+
+                    alert(
+                        result.message ||
+                        "Community alert deleted successfully."
+                    );
+
+
+                    window.location.reload();
+
+                }
+                catch (error) {
+
+                    console.error(
+                        "Delete alert error:",
+                        error
+                    );
+
+
+                    alert(
+                        "Unable to delete the community alert."
+                    );
+
+                }
+                finally {
+
+                    button.disabled =
+                        false;
+                }
+            }
+        );
 
     });
 
