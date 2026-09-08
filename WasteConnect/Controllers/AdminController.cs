@@ -1,4 +1,4 @@
-﻿
+﻿ 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -19,6 +19,7 @@ namespace WasteConnect.Controllers
         private readonly ReportCosmosService _reportService;
         private readonly IConfiguration _configuration;
         private readonly EmailService _emailService;
+        private readonly CommunityAlertCosmosService _communityAlertService;
         private readonly ILogger<AdminController> _logger;
 
         public AdminController(
@@ -27,6 +28,7 @@ namespace WasteConnect.Controllers
             UserManager<ApplicationUser> userManager,
             IConfiguration configuration,
             EmailService emailService,
+             CommunityAlertCosmosService communityAlertService,
             ILogger<AdminController> logger)
         {
             _reportService = reportService;
@@ -34,7 +36,9 @@ namespace WasteConnect.Controllers
             _userManager = userManager;
             _configuration = configuration;
             _emailService = emailService;
+            _communityAlertService = communityAlertService;
             _logger = logger;
+
         }
 
         // =====================================================
@@ -45,6 +49,97 @@ namespace WasteConnect.Controllers
         public IActionResult Dashboard()
         {
             return View();
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PublishCommunityAlert(CommunityAlert alert)
+        {
+            if (string.IsNullOrWhiteSpace(alert.AlertType))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Alert type is required."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(alert.AreaType))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Please select who is affected."
+                });
+            }
+
+            if (string.IsNullOrWhiteSpace(alert.Reason))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Please provide a reason for the alert."
+                });
+            }
+
+            if (alert.StartDateTime == default)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Please provide a start date and time."
+                });
+            }
+
+            if (alert.EndDateTime.HasValue &&
+                alert.EndDateTime.Value < alert.StartDateTime)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message =
+                        "The expected end time cannot be before the start time."
+                });
+            }
+
+            if (alert.AreaType == "Ward" &&
+                !alert.WardNumber.HasValue)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Please select a ward."
+                });
+            }
+
+            if (alert.AreaType == "Area" &&
+                string.IsNullOrWhiteSpace(alert.SpecificArea))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Please enter the affected area."
+                });
+            }
+
+            var currentUser =
+                await _userManager.GetUserAsync(User);
+
+            alert.CreatedBy =
+                currentUser?.FullName ??
+                currentUser?.Email ??
+                "Administrator";
+
+            alert.Status = "Active";
+            alert.CreatedAt = DateTime.UtcNow;
+
+            await _communityAlertService.CreateAlertAsync(alert);
+
+            return Json(new
+            {
+                success = true,
+                message = "Community alert published successfully."
+            });
         }
 
         // =====================================================
