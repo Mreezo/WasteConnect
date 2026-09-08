@@ -1,7 +1,167 @@
-﻿@{
+﻿@model List<WasteConnect.Models.CommunityAlert>
+
+@{
     Layout = "_DashboardLayout";
     ViewData["Title"] = "User Dashboard";
 }
 
-<h2>User Overview</h2>
-<p>Report waste issues, track your reports and manage your profile from here.</p>
+<section class="community-alerts-section">
+
+    <div class="community-alerts-header">
+        <div>
+            <h2>Community Alerts</h2>
+            <p>
+                Stay informed about municipal service interruptions
+                and collection updates.
+            </p>
+        </div>
+    </div>
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="no-community-alerts">
+            <div class="no-alert-icon">🔔</div>
+
+            <h3>No Community Alerts</h3>
+
+            <p>
+                There are currently no municipal alerts to display.
+            </p>
+        </div>
+    }
+    else
+    {
+        <div class="community-alerts-grid">
+
+            @foreach (var alert in Model)
+            {
+                var statusClass = alert.Status switch
+                {
+                    "Active" => "status-active",
+                    "In Progress" => "status-progress",
+                    "Resolved" => "status-resolved",
+                    _ => "status-default"
+                };
+
+                var icon = alert.AlertType switch
+                {
+                    "Electricity" => "⚡",
+                    "Water" => "💧",
+                    "Bin Collection" => "🗑️",
+                    _ => "📢"
+                };
+
+                <article class="community-alert-card">
+
+                    <div class="alert-card-top">
+
+                        <div class="alert-type-wrapper">
+
+                            <div class="alert-type-icon">
+                                @icon
+                            </div>
+
+                            <div>
+                                <span class="alert-small-label">
+                                    Community Alert
+                                </span>
+
+                                <h3>@alert.AlertType</h3>
+                            </div>
+
+                        </div>
+
+                        <span class="alert-status @statusClass">
+                            @alert.Status
+                        </span>
+
+                    </div>
+
+
+                    <div class="alert-location">
+
+                        <span class="location-icon">📍</span>
+
+                        @if (alert.AreaType == "Ward")
+                        {
+                            <span>Ward @alert.WardNumber</span>
+                        }
+                        else if (alert.AreaType == "Area")
+                        {
+                            <span>@alert.SpecificArea</span>
+                        }
+                        else
+                        {
+                            <span>Entire Municipality</span>
+                        }
+
+                    </div>
+
+
+                    <div class="alert-reason-section">
+
+                        <span class="section-label">
+                            Reason
+                        </span>
+
+                        <p>@alert.Reason</p>
+
+                    </div>
+
+
+                    <div class="alert-date-container">
+
+                        <div class="alert-date-item">
+
+                            <span class="date-label">
+                                Starts
+                            </span>
+
+                            <strong>
+                                @alert.StartDateTime.ToString("dd MMM yyyy")
+                            </strong>
+
+                        </div>
+
+                        @if (alert.EndDateTime.HasValue)
+                        {
+                            <div class="date-divider"></div>
+
+                            <div class="alert-date-item">
+
+                                <span class="date-label">
+                                    Expected End
+                                </span>
+
+                                <strong>
+                                    @alert.EndDateTime.Value.ToString("dd MMM yyyy")
+                                </strong>
+
+                            </div>
+                        }
+
+                    </div>
+
+
+                    @if (!string.IsNullOrWhiteSpace(alert.Description))
+                    {
+                        <div class="alert-message">
+
+                            <span class="message-icon">
+                                ℹ️
+                            </span>
+
+                            <p>
+                                @alert.Description
+                            </p>
+
+                        </div>
+                    }
+
+                </article>
+            }
+
+        </div>
+    }
+
+</section>
