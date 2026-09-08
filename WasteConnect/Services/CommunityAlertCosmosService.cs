@@ -96,5 +96,45 @@ namespace WasteConnect.Services
                 .OrderByDescending(a => a.CreatedAt)
                 .ToList();
         }
+
+        public async Task<CommunityAlert?> GetAlertByIdAsync(
+            string id,
+            string alertType)
+        {
+            try
+            {
+                var response =
+                    await _container.ReadItemAsync<CommunityAlert>(
+                        id,
+                        new PartitionKey(alertType));
+
+                return response.Resource;
+            }
+            catch (CosmosException ex)
+                when (ex.StatusCode ==
+                      System.Net.HttpStatusCode.NotFound)
+            {
+                return null;
+            }
+        }
+
+
+        public async Task UpdateAlertAsync(
+            CommunityAlert alert)
+        {
+            await _container.UpsertItemAsync(
+                alert,
+                new PartitionKey(alert.AlertType));
+        }
+
+
+        public async Task DeleteAlertAsync(
+            string id,
+            string alertType)
+        {
+            await _container.DeleteItemAsync<CommunityAlert>(
+                id,
+                new PartitionKey(alertType));
+        }
     }
 }
