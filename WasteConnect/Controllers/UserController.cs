@@ -189,7 +189,7 @@ namespace WasteConnect.Controllers
                     .ToList()
             };
 
-            return View(alerts);
+            return View(model);
         }
 
         [HttpGet]
