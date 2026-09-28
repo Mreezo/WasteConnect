@@ -168,9 +168,26 @@ namespace WasteConnect.Controllers
         [HttpGet]
         public async Task<IActionResult> Dashboard()
         {
-            var alerts =
-                await _communityAlertService
-                    .GetAllAlertsAsync();
+            var allAlerts =
+                await _communityAlertService.GetAllAlertsAsync();
+
+            var model = new CommunityAlertsViewModel
+            {
+                WaterAlerts = allAlerts
+                    .Where(a => a.AlertType == "Water" &&
+                                a.Status != "Resolved")
+                    .ToList(),
+
+                ElectricityAlerts = allAlerts
+                    .Where(a => a.AlertType == "Electricity" &&
+                                a.Status != "Resolved")
+                    .ToList(),
+
+                BinCollectionAlerts = allAlerts
+                    .Where(a => a.AlertType == "Bin Collection" &&
+                                a.Status != "Resolved")
+                    .ToList()
+            };
 
             return View(alerts);
         }
