@@ -21,6 +21,7 @@ namespace WasteConnect.Controllers
         private readonly EmailService _emailService;
         private readonly CommunityAlertCosmosService _communityAlertService;
         private readonly ILogger<AdminController> _logger;
+        private readonly CommunityAlertQueueService _communityAlertQueueService;
 
         public AdminController(
             ReportCosmosService reportService,
@@ -29,6 +30,7 @@ namespace WasteConnect.Controllers
             IConfiguration configuration,
             EmailService emailService,
              CommunityAlertCosmosService communityAlertService,
+             CommunityAlertQueueService communityAlertQueueService,
             ILogger<AdminController> logger)
         {
             _reportService = reportService;
@@ -37,6 +39,7 @@ namespace WasteConnect.Controllers
             _configuration = configuration;
             _emailService = emailService;
             _communityAlertService = communityAlertService;
+            _communityAlertQueueService = communityAlertQueueService;
             _logger = logger;
 
         }
@@ -58,6 +61,10 @@ namespace WasteConnect.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> PublishCommunityAlert(CommunityAlert alert)
         {
+            // =====================================================
+            // VALIDATION
+            // =====================================================
+
             if (string.IsNullOrWhiteSpace(alert.AlertType))
             {
                 return BadRequest(new
@@ -125,6 +132,11 @@ namespace WasteConnect.Controllers
                 });
             }
 
+
+            // =====================================================
+            // ADMIN INFORMATION
+            // =====================================================
+
             var currentUser =
                 await _userManager.GetUserAsync(User);
 
@@ -134,14 +146,128 @@ namespace WasteConnect.Controllers
                 "Administrator";
 
             alert.Status = "Active";
+
             alert.CreatedAt = DateTime.UtcNow;
 
-            await _communityAlertService.CreateAlertAsync(alert);
+
+            // =====================================================
+            // SAVE ALERT TO COSMOS DB
+            // =====================================================
+
+            try
+            {
+                await _communityAlertService
+                    .CreateAlertAsync(alert);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to save Community Alert to Cosmos DB.");
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message =
+                        "The community alert could not be published."
+                });
+            }
+
+
+            // =====================================================
+            // BUILD SMS MESSAGE
+            // =====================================================
+
+            string affectedLocation;
+
+            if (alert.AreaType == "Ward" &&
+                alert.WardNumber.HasValue)
+            {
+                affectedLocation =
+                    $"Ward {alert.WardNumber.Value}";
+            }
+            else if (alert.AreaType == "Area" &&
+                     !string.IsNullOrWhiteSpace(
+                         alert.SpecificArea))
+            {
+                affectedLocation =
+                    alert.SpecificArea;
+            }
+            else
+            {
+                affectedLocation =
+                    "Msunduzi Municipality";
+            }
+
+
+            var smsMessage =
+
+            $"WasteConnect Alert: {alert.AlertType} alert " +
+            $"affecting {affectedLocation}. " +
+            $"Reason: {alert.Reason}. " +
+            $"Starts: {alert.StartDateTime:dd MMM yyyy HH:mm}.";
+
+            if (alert.EndDateTime.HasValue)
+            {
+                smsMessage +=
+                    $" Expected end: " +
+                    $"{alert.EndDateTime.Value:dd MMM yyyy HH:mm}.";
+            }
+
+            smsMessage +=
+                " Please check WasteConnect for more details.";
+
+
+            // =====================================================
+            // SEND SMS JOB TO AZURE SERVICE BUS
+            // =====================================================
+
+            try
+            {
+                // TEMPORARY:
+                // Twilio trial account currently uses one
+                // verified recipient for Community Alert testing.
+                //
+                // Later this will be replaced with phone numbers
+                // retrieved from registered WasteConnect users.
+
+                await _communityAlertQueueService
+                    .EnqueueSmsAsync(
+                        "0660684199",
+                        smsMessage,
+                        alert.Id);
+
+                _logger.LogInformation(
+                    "Community Alert SMS queued successfully. " +
+                    "AlertId: {AlertId}",
+                    alert.Id);
+            }
+            catch (Exception ex)
+            {
+                // IMPORTANT:
+                // The Community Alert has already been stored
+                // successfully in Cosmos DB.
+                //
+                // An SMS/Service Bus problem must therefore NOT
+                // cause publishing the alert to fail.
+
+                _logger.LogError(
+                    ex,
+                    "Community Alert {AlertId} was published, " +
+                    "but its SMS notification could not be queued.",
+                    alert.Id);
+            }
+
+
+            // =====================================================
+            // SUCCESS
+            // =====================================================
 
             return Json(new
             {
                 success = true,
-                message = "Community alert published successfully."
+                message =
+                    "Community alert published successfully."
             });
         }
 
