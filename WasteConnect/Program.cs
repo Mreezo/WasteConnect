@@ -42,6 +42,8 @@ builder.Services.AddScoped<EmailService>();
 builder.Services.AddMemoryCache();
 builder.Services.AddScoped<TwilioOtpService>();
 builder.Services.AddScoped<CommunityAlertCosmosService>();
+builder.Services.AddSingleton<CommunityAlertQueueService>();
+builder.Services.AddHostedService<CommunityAlertSmsWorker>();
 
 builder.Services.AddSingleton<
     IWardLookupService,

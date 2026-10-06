@@ -18,6 +18,10 @@ namespace WasteConnect.Services
             _cache = cache;
         }
 
+        // =====================================================
+        // REPORT OTP
+        // =====================================================
+
         public async Task SendReportOtpAsync(string phoneNumber)
         {
             var accountSid = _configuration["Twilio:AccountSid"];
@@ -28,31 +32,88 @@ namespace WasteConnect.Services
                 string.IsNullOrWhiteSpace(authToken) ||
                 string.IsNullOrWhiteSpace(fromNumber))
             {
-                throw new InvalidOperationException("Twilio settings are missing.");
+                throw new InvalidOperationException(
+                    "Twilio settings are missing.");
             }
 
-            var formattedPhone = FormatSouthAfricanNumber(phoneNumber);
+            var formattedPhone =
+                FormatSouthAfricanNumber(phoneNumber);
 
-            var otp = new Random().Next(100000, 999999).ToString();
+            var otp =
+                new Random().Next(100000, 999999).ToString();
 
             _cache.Set(
                 $"ReportOtp_{formattedPhone}",
                 otp,
                 TimeSpan.FromMinutes(5));
 
-            TwilioClient.Init(accountSid, authToken);
+            TwilioClient.Init(
+                accountSid,
+                authToken);
 
             await MessageResource.CreateAsync(
-                body: $"Your WasteConnect report verification code is {otp}. It expires in 5 minutes.",
+                body:
+                    $"Your WasteConnect report verification code is {otp}. " +
+                    $"It expires in 5 minutes.",
                 from: new PhoneNumber(fromNumber),
                 to: new PhoneNumber(formattedPhone));
         }
 
-        public bool VerifyReportOtp(string phoneNumber, string otp)
-        {
-            var formattedPhone = FormatSouthAfricanNumber(phoneNumber);
 
-            var savedOtp = _cache.Get<string>($"ReportOtp_{formattedPhone}");
+        // =====================================================
+        // GENERAL SMS
+        // Used by Community Alert background worker
+        // =====================================================
+
+        public async Task SendSmsAsync(
+            string phoneNumber,
+            string message)
+        {
+            var accountSid =
+                _configuration["Twilio:AccountSid"];
+
+            var authToken =
+                _configuration["Twilio:AuthToken"];
+
+            var fromNumber =
+                _configuration["Twilio:FromNumber"];
+
+            if (string.IsNullOrWhiteSpace(accountSid) ||
+                string.IsNullOrWhiteSpace(authToken) ||
+                string.IsNullOrWhiteSpace(fromNumber))
+            {
+                throw new InvalidOperationException(
+                    "Twilio settings are missing.");
+            }
+
+            var formattedPhone =
+                FormatSouthAfricanNumber(phoneNumber);
+
+            TwilioClient.Init(
+                accountSid,
+                authToken);
+
+            await MessageResource.CreateAsync(
+                body: message,
+                from: new PhoneNumber(fromNumber),
+                to: new PhoneNumber(formattedPhone));
+        }
+
+
+        // =====================================================
+        // VERIFY OTP
+        // =====================================================
+
+        public bool VerifyReportOtp(
+            string phoneNumber,
+            string otp)
+        {
+            var formattedPhone =
+                FormatSouthAfricanNumber(phoneNumber);
+
+            var savedOtp =
+                _cache.Get<string>(
+                    $"ReportOtp_{formattedPhone}");
 
             if (string.IsNullOrWhiteSpace(savedOtp))
                 return false;
@@ -60,17 +121,25 @@ namespace WasteConnect.Services
             if (savedOtp != otp)
                 return false;
 
-            _cache.Remove($"ReportOtp_{formattedPhone}");
+            _cache.Remove(
+                $"ReportOtp_{formattedPhone}");
 
             return true;
         }
 
-        private string FormatSouthAfricanNumber(string phoneNumber)
+
+        // =====================================================
+        // FORMAT SOUTH AFRICAN PHONE NUMBER
+        // =====================================================
+
+        private string FormatSouthAfricanNumber(
+            string phoneNumber)
         {
             if (string.IsNullOrWhiteSpace(phoneNumber))
                 return phoneNumber;
 
-            phoneNumber = phoneNumber.Trim().Replace(" ", "");
+            phoneNumber =
+                phoneNumber.Trim().Replace(" ", "");
 
             if (phoneNumber.StartsWith("+"))
                 return phoneNumber;
