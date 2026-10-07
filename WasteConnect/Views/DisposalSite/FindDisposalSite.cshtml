@@ -1,4 +1,5 @@
-﻿@model List<WasteConnect.Models.DisposalSite>
+﻿@using System.Globalization
+@model List<WasteConnect.Models.DisposalSite>
 
 @{
     Layout = "_DashboardLayout";
@@ -32,8 +33,8 @@
         @foreach (var site in Model)
         {
             <div class="disposal-card"
-                 data-lat="@site.Latitude"
-                 data-lng="@site.Longitude">
+                 data-lat="@site.Latitude.ToString(CultureInfo.InvariantCulture)"
+                 data-lng="@site.Longitude.ToString(CultureInfo.InvariantCulture)">
 
                 <div class="disposal-card-layout">
 
@@ -102,6 +103,11 @@
                     const userLat = position.coords.latitude;
                     const userLng = position.coords.longitude;
 
+                            console.log("===== USER LOCATION =====");
+                            console.log("Latitude:", userLat);
+                            console.log("Longitude:", userLng);
+                            console.log("Accuracy:", position.coords.accuracy, "metres");
+
                     const cards = document.querySelectorAll(".disposal-card");
 
                     let nearestCard = null;
@@ -114,6 +120,26 @@
 
                         const siteLat = parseFloat(card.dataset.lat);
                         const siteLng = parseFloat(card.dataset.lng);
+
+                                console.log("===== DISPOSAL SITE =====");
+                                console.log(
+                                    "Site:",
+                                    card.querySelector("h3").innerText
+                                );
+
+                                console.log("Latitude:", siteLat);
+                                console.log("Longitude:", siteLng);
+
+                                console.log(
+                                    "Distance:",
+                                    calculateDistance(
+                                        userLat,
+                                        userLng,
+                                        siteLat,
+                                        siteLng
+                                    ),
+                                    "km"
+                                );
 
                         const distance = calculateDistance(userLat, userLng, siteLat, siteLng);
 

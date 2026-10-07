@@ -1,4 +1,5 @@
-﻿@model List<WasteConnect.Models.DisposalSite>
+﻿@using System.Globalization
+@model List<WasteConnect.Models.DisposalSite>
 
 @{
     Layout = "_DashboardLayout";
@@ -31,8 +32,8 @@
         @foreach (var site in Model)
         {
             <div class="disposal-card"
-                 data-lat="@site.Latitude"
-                 data-lng="@site.Longitude">
+                 data-lat="@site.Latitude.ToString(CultureInfo.InvariantCulture)"
+                 data-lng="@site.Longitude.ToString(CultureInfo.InvariantCulture)">
 
                 <div class="disposal-card-layout">
 
