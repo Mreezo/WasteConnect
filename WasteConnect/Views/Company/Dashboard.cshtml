@@ -3,5 +3,325 @@
     ViewData["Title"] = "Company Dashboard";
 }
 
-<h2>Company Overview</h2>
-<p>Manage your company profile, assigned jobs and service requests from here.</p>
+<link rel="stylesheet"
+      href="~/css/company-dashboard.css"
+      asp-append-version="true" />
+
+<div class="company-dashboard">
+
+    <!-- ===================================================
+         COMPANY INTRO SLIDESHOW
+    ==================================================== -->
+    <section class="company-slider">
+
+        <!-- SLIDE 1 -->
+        <div class="company-slide active"
+             style="background-image: url('/images/company-assignment.jpg');">
+
+            <div class="slide-overlay"></div>
+
+            <div class="slide-content">
+                <span class="slide-label">
+                    WASTECONNECT FOR COMPANIES
+                </span>
+
+                <h1>
+                    Receive Cleanup<br />
+                    Assignments
+                </h1>
+
+                <p>
+                    Receive waste and illegal-dumping cleanup jobs
+                    assigned to your company through WasteConnect.
+                </p>
+
+                <a asp-controller="Company"
+                   asp-action="AssignedJobs"
+                   class="slide-button">
+
+                    View Assignments
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+
+        <!-- SLIDE 2 -->
+        <div class="company-slide"
+             style="background-image: url('/images/company-navigation.jpg');">
+
+            <div class="slide-overlay"></div>
+
+            <div class="slide-content">
+                <span class="slide-label">
+                    SMART FIELD OPERATIONS
+                </span>
+
+                <h1>
+                    Navigate to Reported<br />
+                    Locations
+                </h1>
+
+                <p>
+                    View reported locations and use mapping
+                    information to reach communities requiring
+                    cleanup services.
+                </p>
+            </div>
+        </div>
+
+
+        <!-- SLIDE 3 -->
+        <div class="company-slide"
+             style="background-image: url('/images/company-cleanup.jpg');">
+
+            <div class="slide-overlay"></div>
+
+            <div class="slide-content">
+                <span class="slide-label">
+                    COMMUNITY CLEANUP
+                </span>
+
+                <h1>
+                    Clean. Update.<br />
+                    Make an Impact.
+                </h1>
+
+                <p>
+                    Carry out cleanup operations and update
+                    the assignment status as your team
+                    progresses.
+                </p>
+            </div>
+        </div>
+
+
+        <!-- SLIDE 4 -->
+        <div class="company-slide"
+             style="background-image: url('/images/company/company-complete.jpg');">
+
+            <div class="slide-overlay"></div>
+
+            <div class="slide-content">
+                <span class="slide-label">
+                    COMPLETE THE JOB
+                </span>
+
+                <h1>
+                    Complete &amp;<br />
+                    Report
+                </h1>
+
+                <p>
+                    Mark assignments as completed so administrators,
+                    councillors and residents can see that the
+                    reported issue has been resolved.
+                </p>
+            </div>
+        </div>
+
+
+        <!-- ARROWS -->
+        <button class="slider-arrow slider-prev"
+                type="button"
+                aria-label="Previous slide">
+
+            <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <button class="slider-arrow slider-next"
+                type="button"
+                aria-label="Next slide">
+
+            <i class="bi bi-chevron-right"></i>
+        </button>
+
+
+        <!-- DOTS -->
+        <div class="slider-dots">
+            <button class="slider-dot active"
+                    data-slide="0"
+                    aria-label="Slide 1"></button>
+
+            <button class="slider-dot"
+                    data-slide="1"
+                    aria-label="Slide 2"></button>
+
+            <button class="slider-dot"
+                    data-slide="2"
+                    aria-label="Slide 3"></button>
+
+            <button class="slider-dot"
+                    data-slide="3"
+                    aria-label="Slide 4"></button>
+        </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         REGISTRATION SECTION
+    ==================================================== -->
+    <section class="company-registration-card">
+
+        <div class="registration-icon">
+            <i class="bi bi-building-check"></i>
+        </div>
+
+        <div class="registration-info">
+
+            <span class="registration-label">
+                COMPANY SETUP
+            </span>
+
+            <h2>Complete your company profile</h2>
+
+            <p>
+                Complete your company registration before receiving
+                cleanup assignments through WasteConnect.
+            </p>
+
+            <div class="registration-number-info">
+
+                <div class="email-icon">
+                    <i class="bi bi-envelope-check"></i>
+                </div>
+
+                <div>
+                    <strong>
+                        Have your WasteConnect Registration Number ready
+                    </strong>
+
+                    <span>
+                        Your registration number was sent to the
+                        email address you used when creating your
+                        company account.
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="registration-action">
+
+            <a asp-controller="Company"
+               asp-action="RegisterCompany"
+               class="register-company-btn">
+
+                Complete Registration
+
+                <i class="bi bi-arrow-right"></i>
+            </a>
+
+        </div>
+
+    </section>
+
+
+    <!-- ===================================================
+         SIMPLE PROCESS
+    ==================================================== -->
+    <section class="company-process">
+
+        <div class="process-heading">
+            <span>HOW IT WORKS</span>
+            <h2>Your WasteConnect workflow</h2>
+            <p>
+                From receiving an assignment to completing
+                the cleanup.
+            </p>
+        </div>
+
+
+        <div class="process-steps">
+
+            <div class="process-step">
+
+                <div class="step-number">01</div>
+
+                <div class="step-icon">
+                    <i class="bi bi-clipboard-check"></i>
+                </div>
+
+                <h3>Receive</h3>
+
+                <p>
+                    Receive cleanup assignments from
+                    WasteConnect administrators.
+                </p>
+
+            </div>
+
+
+            <div class="process-line"></div>
+
+
+            <div class="process-step">
+
+                <div class="step-number">02</div>
+
+                <div class="step-icon">
+                    <i class="bi bi-geo-alt"></i>
+                </div>
+
+                <h3>Navigate</h3>
+
+                <p>
+                    View the reported location and travel
+                    to the affected area.
+                </p>
+
+            </div>
+
+
+            <div class="process-line"></div>
+
+
+            <div class="process-step">
+
+                <div class="step-number">03</div>
+
+                <div class="step-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+
+                <h3>Clean</h3>
+
+                <p>
+                    Perform the cleanup and keep the
+                    assignment status updated.
+                </p>
+
+            </div>
+
+
+            <div class="process-line"></div>
+
+
+            <div class="process-step">
+
+                <div class="step-number">04</div>
+
+                <div class="step-icon">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+
+                <h3>Complete</h3>
+
+                <p>
+                    Mark the job as completed once the
+                    area has been cleaned.
+                </p>
+
+            </div>
+
+        </div>
+
+    </section>
+
+</div>
+
+<script src="~/js/company-dashboard.js"
+        asp-append-version="true"></script>
