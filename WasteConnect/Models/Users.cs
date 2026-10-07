@@ -15,5 +15,7 @@ namespace WasteConnect.Models
         public string? PositionTitle { get; set; }
 
         public bool IsAccountActive { get; set; } = true;
+
+        public string? CompanyRegistrationCode { get; set; }
     }
 }

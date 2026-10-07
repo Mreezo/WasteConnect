@@ -239,7 +239,12 @@ namespace WasteConnect.Controllers
                 FullName = model.FullName.Trim(),
                 UserName = email,
                 Email = email,
-                PhoneNumber = model.PhoneNumber
+                PhoneNumber = model.PhoneNumber,
+
+                CompanyRegistrationCode =
+                model.Role == "Company"
+            ? GenerateCompanyRegistrationCode()
+            : null
             };
 
             var result =
@@ -249,12 +254,60 @@ namespace WasteConnect.Controllers
 
             if (result.Succeeded)
             {
-                await _userManager.AddToRoleAsync(
-                    user,
-                    model.Role);
+                var roleResult =
+                    await _userManager.AddToRoleAsync(
+                        user,
+                        model.Role);
+
+                if (!roleResult.Succeeded)
+                {
+                    foreach (var error in roleResult.Errors)
+                    {
+                        ModelState.AddModelError(
+                            "",
+                            error.Description);
+                    }
+
+                    return View(model);
+                }
+
+
+                // ============================================
+                // SEND COMPANY REGISTRATION EMAIL
+                // ============================================
+
+                if (model.Role == "Company" &&
+                    !string.IsNullOrWhiteSpace(
+                        user.CompanyRegistrationCode))
+                {
+                    try
+                    {
+                        await _emailService
+                            .SendCompanyRegistrationSuccessAsync(
+                                user.Email!,
+                                user.FullName!,
+                                user.CompanyRegistrationCode);
+                    }
+                    catch (Exception)
+                    {
+                        TempData["RegisterSuccess"] =
+                            "Your company account was registered successfully, " +
+                            "but we could not send the registration email.";
+
+                        return RedirectToAction(nameof(Register));
+                    }
+                }
+
+
+                // ============================================
+                // REGISTRATION SUCCESS MESSAGE
+                // ============================================
 
                 TempData["RegisterSuccess"] =
-                    "Registration successful. You can now login.";
+                    model.Role == "Company"
+                        ? "Company registration successful. Your WasteConnect " +
+                          "Registration Number has been sent to your email."
+                        : "Registration successful. You can now login.";
 
                 return RedirectToAction(nameof(Register));
             }
@@ -578,7 +631,46 @@ namespace WasteConnect.Controllers
             return View();
         }
 
-       
+
+        public async Task SendCompanyRegistrationSuccessAsync(
+        string email,
+        string companyName,
+        string registrationCode)
+        {
+         
+            var subject =
+           "WasteConnect Company Registration Successful";
+
+            var body = $@"
+                <h2>Welcome to WasteConnect</h2>
+
+                <p>Hello {companyName},</p>
+
+                <p>
+                    Your company account has been successfully
+                    registered on WasteConnect.
+                </p>
+
+                <p>
+                    Your WasteConnect Registration Number is:
+                </p>
+
+                <h2>{registrationCode}</h2>
+
+                <p>
+                    Please keep this registration number safe.
+                    You will need it when completing your company
+                    registration on the WasteConnect Company Dashboard.
+                </p>
+
+                <p>
+                    Regards,<br/>
+                    WasteConnect
+                </p>
+            ";
+
+            // Send using your EXISTING email sending implementation here.
+        }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -587,5 +679,19 @@ namespace WasteConnect.Controllers
             await _signInManager.SignOutAsync();
 
             return RedirectToAction("Index", "Home");
-        }   }
+        }
+
+
+        private static string GenerateCompanyRegistrationCode()
+        {
+            var year = DateTime.UtcNow.Year;
+
+            var uniquePart = Guid.NewGuid()
+                .ToString("N")
+                .Substring(0, 6)
+                .ToUpperInvariant();
+
+            return $"WC-CMP-{year}-{uniquePart}";
+        }
+    }
 }
